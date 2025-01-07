@@ -9,6 +9,12 @@ readme = "README.md"
 python = "^3.12"
 opencv-python = "^4.10.0.84"
 scikit-learn = "^1.6.0"
+torchvision = "^0.20.1"
+albumentations = "^1.4.24"
+tqdm = "^4.67.1"
+matplotlib = "^3.10.0"
+onnxruntime = "^1.20.1"
+pycocotools = "^2.0.8"
 
 
 [build-system]
