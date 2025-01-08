@@ -11,26 +11,26 @@ from albumentations.pytorch import ToTensorV2
 mean = np.array([0.485, 0.456, 0.406])
 std = np.array([0.229, 0.224, 0.225])
 
-def get_train_transforms(hyperparameters_yaml_path='hyps.yaml'):
-    with open(hyperparameters_yaml_path, 'r') as file:
+def get_train_transforms(hyps_yaml_path='hyps.yaml'):
+    with open(hyps_yaml_path, 'r') as file:
         hyps = yaml.safe_load(file)
 
     return Compose([
         HorizontalFlip(p=hyps['horizontal_flip']),
-        RandomBrightnessContrast(p=hyps['random_brightness_contrast'], 
-                                 brightness_limit=hyps['brightness_limit'], 
-                                 contrast_limit=hyps['contrast_limit']
+        RandomBrightnessContrast(p=hyps['b_c_probability'], 
+                                 brightness_limit=hyps['brightness'], 
+                                 contrast_limit=hyps['contrast']
                                  ),
-        HueSaturationValue(p=hyps['hue_saturation_value'],
-                           hue_shift_limit=hyps['hue_shift_limit'],
-                           sat_shift_limit=hyps['sat_shift_limit'],
-                           val_shift_limit=hyps['val_shift_limit'],
+        HueSaturationValue(p=hyps['h_s_v_probability'],
+                           hue_shift_limit=hyps['hue'],
+                           sat_shift_limit=hyps['sat'],
+                           val_shift_limit=hyps['val'],
                            ),
         Affine(
-            p=hyps['shift_scale_rotate'],
-            translate_percent=hyps['shift_limit'],
-            scale=hyps['scale_limit'],
-            rotate=hyps['rotate_limit'],
+            p=hyps['t_s_r_probability'],
+            translate_percent=hyps['translate'],
+            scale=hyps['scale'],
+            rotate=hyps['rotate'],
         ),
         Normalize(mean=mean.tolist(), std=std.tolist()),
         ToTensorV2(),
