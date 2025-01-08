@@ -40,7 +40,7 @@ class RetinaDataset(Dataset):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         # Carrega as anotações
-        label_path = img_path.replace('/images', '/labels')
+        label_path = img_path.replace('images', 'labels')
         label_path = label_path.replace('.jpg', '.txt')
 
         boxes = []

@@ -12,8 +12,8 @@ def create_image(images_dir, index):
     image = Image.new("RGB", (100, 100), color=(index * 20, index * 30, index * 40))
     image.save(image_path)
 
-def create_label(images_dir, index):
-    label_path = os.path.join(images_dir, f"image_{index}.txt")
+def create_label(labels_dir, index):
+    label_path = os.path.join(labels_dir, f"image_{index}.txt")
     with open(label_path, 'w') as file:
         file.write('0 0.1 0.1 0.1 0.1')
     
@@ -26,12 +26,14 @@ def create_dataset_path_train(qtd_images=5):
     try:
         # Subdiretório para armazenar imagens
         images_dir = os.path.join(temp_dir, "images")
+        labels_dir = os.path.join(temp_dir, "labels")
         os.makedirs(images_dir)
+        os.makedirs(labels_dir)
 
         # Cria algumas imagens fictícias no subdiretório
         for i in range(qtd_images): 
             create_image(images_dir, i)
-            create_label(images_dir, i)
+            create_label(labels_dir, i)
 
         # Cria um arquivo `train.txt` com a lista de caminhos das imagens
         train_file_path = os.path.join(temp_dir, "train.txt")
