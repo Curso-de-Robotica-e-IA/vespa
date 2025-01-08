@@ -15,7 +15,7 @@ class DatasetFactory:
         Cria um dataset com base no tipo especificado.
 
         Args:
-            dataset_type (str): Tipo do dataset (ex.: 'yolo', 'coco', 'pascal_voc', 'tfrecord', 'kitti').
+            dataset_type (str): Tipo do dataset (ex.: 'yolo', 'coco', 'pascal_voc', 'kitti').
             kwargs (dict): Argumentos necessários para inicializar o dataset.
 
         Returns:
