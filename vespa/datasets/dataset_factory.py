@@ -1,6 +1,6 @@
 from vespa.datasets.yolo.yolo_dataset import YOLODataset
 from vespa.datasets.coco.coco_dataset import COCODataset
-from vespa.datasets.PascalVOC.pascal_voc_dataset import PascalVOCDataset
+from vespa.datasets.pascalVOC.pascal_voc_dataset import PascalVOCDataset
 from vespa.datasets.kitti.kitti_dataset import KITTIDataset
 
 

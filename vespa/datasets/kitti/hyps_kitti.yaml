@@ -1,5 +1,5 @@
 # Optimizer Parameters
-lr: 1e-4                          # Learning rate
+lr: 1e-5                          # Learning rate
 momentum: 0.9                     # Momentum para SGD
 weight_decay: 5e-4                # Weight decay para regularização
 
@@ -8,11 +8,11 @@ horizontal_flip: 0.5              # Probabilidade de flip horizontal
 brightness_limit: 0.3             # Limite para ajuste de brilho (-0.3, 0.3)
 contrast_limit: 0.3               # Limite para ajuste de contraste (-0.3, 0.3)
 random_brightness_contrast: 0.4   # Probabilidade de aplicar brilho/contraste aleatório
-shift_limit: 0.05                 # Limite para deslocamento (-0.05, 0.05)
+shift_limit: 0.1                  # Limite para deslocamento (-0.1, 0.1)
 scale_limit: 0.2                  # Limite para escala (-0.2, 0.2)
-rotate_limit: 15                  # Limite para rotação (-15, 15)
+rotate_limit: 10                  # Limite para rotação (-10, 10)
 shift_scale_rotate: 0.3           # Probabilidade de aplicar deslocamento/escala/rotação
-min_visibility: 0.6               # Visibilidade mínima para bounding boxes
+min_visibility: 0.7               # Visibilidade mínima para bounding boxes
 
 # Bounding Box Format
-box_format: "normalized"          # Formato das caixas: normalizado
+box_format: "kitti"               # Formato das caixas: KITTI (2D)

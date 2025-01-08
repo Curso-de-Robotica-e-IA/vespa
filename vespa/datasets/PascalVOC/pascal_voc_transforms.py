@@ -3,7 +3,7 @@ from albumentations import Compose, HorizontalFlip, RandomBrightnessContrast, Sh
 from albumentations.pytorch import ToTensorV2
 from vespa.datasets.config import MEAN, STD
 
-def get_pascal_voc_train_transforms(hyps_path="hyps_pascal_voc.yaml"):
+def get_pascal_voc_train_transforms(hyps_path="./vespa/datasets/pascalVOC/hyps_pascal_voc.yaml"):
     """
     Transformações para treinamento no formato Pascal VOC.
     """

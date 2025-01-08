@@ -3,7 +3,7 @@ from albumentations import Compose, HorizontalFlip, RandomBrightnessContrast, Hu
 from albumentations.pytorch import ToTensorV2
 from vespa.datasets.config import MEAN, STD
 
-def get_coco_train_transforms(hyps_path="hyps_coco.yaml"):
+def get_coco_train_transforms(hyps_path="./vespa/datasets/coco/hyps_coco.yaml"):
     """
     Transformações para treinamento no formato COCO.
     """

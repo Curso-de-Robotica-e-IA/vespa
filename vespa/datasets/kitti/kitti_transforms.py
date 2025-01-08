@@ -3,7 +3,7 @@ from albumentations import Compose, HorizontalFlip, RandomBrightnessContrast, Sh
 from albumentations.pytorch import ToTensorV2
 from vespa.datasets.config import MEAN, STD
 
-def get_kitti_train_transforms(hyps_path="hyps_kitti.yaml"):
+def get_kitti_train_transforms(hyps_path="./vespa/datasets/kitti/hyps_kitti.yaml"):
     """
     Transformações para treinamento no formato KITTI.
     """

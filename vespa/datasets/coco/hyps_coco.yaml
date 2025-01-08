@@ -1,0 +1,22 @@
+# Optimizer Parameters
+lr: 1e-4                          # Learning rate
+momentum: 0.9                     # Momentum para SGD
+weight_decay: 1e-4                # Weight decay para regularização
+
+# Data Augmentation
+horizontal_flip: 0.5              # Probabilidade de flip horizontal
+brightness_limit: 0.2             # Limite para ajuste de brilho (-0.2, 0.2)
+contrast_limit: 0.2               # Limite para ajuste de contraste (-0.2, 0.2)
+random_brightness_contrast: 0.3   # Probabilidade de aplicar brilho/contraste aleatório
+hue_shift_limit: 10               # Limite de ajuste de hue (-10, 10)
+sat_shift_limit: 15               # Limite de ajuste de saturação (-15, 15)
+val_shift_limit: 10               # Limite de ajuste de valor (-10, 10)
+hue_saturation_value: 0.3         # Probabilidade de ajuste de hue/saturação/valor
+shift_limit: 0.05                 # Limite para deslocamento (-0.05, 0.05)
+scale_limit: 0.2                  # Limite para escala (-0.2, 0.2)
+rotate_limit: 15                  # Limite para rotação (-15, 15)
+shift_scale_rotate: 0.3           # Probabilidade de aplicar deslocamento/escala/rotação
+min_visibility: 0.7               # Visibilidade mínima para bounding boxes
+
+# Bounding Box Format
+box_format: "coco"                # Formato das caixas: COCO

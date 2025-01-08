@@ -1,0 +1,18 @@
+# Optimizer Parameters
+lr: 1e-4                          # Learning rate
+momentum: 0.9                     # Momentum para SGD
+weight_decay: 5e-4                # Weight decay para regularização
+
+# Data Augmentation
+horizontal_flip: 0.6              # Probabilidade de flip horizontal
+brightness_limit: 0.3             # Limite para ajuste de brilho (-0.3, 0.3)
+contrast_limit: 0.3               # Limite para ajuste de contraste (-0.3, 0.3)
+random_brightness_contrast: 0.4   # Probabilidade de aplicar brilho/contraste aleatório
+shift_limit: 0.05                 # Limite para deslocamento (-0.05, 0.05)
+scale_limit: 0.3                  # Limite para escala (-0.3, 0.3)
+rotate_limit: 20                  # Limite para rotação (-20, 20)
+shift_scale_rotate: 0.4           # Probabilidade de aplicar deslocamento/escala/rotação
+min_visibility: 0.6               # Visibilidade mínima para bounding boxes
+
+# Bounding Box Format
+box_format: "voc"                 # Formato das caixas: Pascal VOC

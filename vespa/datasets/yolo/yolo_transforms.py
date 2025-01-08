@@ -3,7 +3,7 @@ from albumentations import Compose, HorizontalFlip, RandomBrightnessContrast, Sh
 from albumentations.pytorch import ToTensorV2
 from vespa.datasets.config import MEAN, STD
 
-def get_yolo_train_transforms(hyps_path="hyps_yolo.yaml"):
+def get_yolo_train_transforms(hyps_path="./vespa/datasets/yolo/hyps_yolo.yaml"):
     """
     Transformações para treinamento no formato YOLO.
     """

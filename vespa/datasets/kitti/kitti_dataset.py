@@ -17,6 +17,9 @@ class KITTIDataset(BaseDataset):
         """
         img_path = self.image_paths[idx]
         label_path = self.label_paths[idx]
+        
+        if not os.path.exists(label_path):
+            raise FileNotFoundError(f"Rótulo não encontrado para {img_path}")
 
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
