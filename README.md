@@ -30,7 +30,7 @@ poetry shell
 
 ### Check the CUDA availability
 
-To check if CUDA is available, run the following command:
+To check if CUDA is available, be sure that you in created environment, and run the following command:
 
 ```bash
 python -c "import torch; print(torch.cuda.is_available())"
