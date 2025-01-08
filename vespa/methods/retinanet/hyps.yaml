@@ -1,0 +1,16 @@
+lr: 1e-6                          # Learning rate to optimizer
+momentum: 0.9                     # used if SGD choice. DEFAULT is Adam
+weight_decay: 5e-6                # Weight decay to optmizer
+horizontal_flip: 0.4              # probability to apply
+brightness_limit: 0.4             # used on random_brightness_contrast. Gain +- (-0.4, 0.4)
+contrast_limit: 0.4               # used on random_brightness_contrast. Gain +- (-0.4, 0.4)
+random_brightness_contrast: 0.3   # probability to apply
+hue_shift_limit: 20               # used on hue_saturation_value. Gain +- (-20, 20)
+sat_shift_limit: 30               # used on hue_saturation_value. Gain +- (-30, 20)
+val_shift_limit: 20               # used on hue_saturation_value. Gain +- (-20, 20)
+hue_saturation_value: 0.2         # probability to apply
+shift_limit: 0.05                 # used on shift_scale_rotate. Gain +- (-0.05, 0.05)
+scale_limit: 0.5                  # used on shift_scale_rotate. Gain +- (-0.5, 0.5)
+rotate_limit: 30                  # used on shift_scale_rotate. Gain +- (-30, 30)
+shift_scale_rotate: 0.3           # probability to apply
+min_visibility: 0.6               # Minimal percentage of visibility from bounding boxes
