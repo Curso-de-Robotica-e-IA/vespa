@@ -26,7 +26,7 @@ def get_yolo_train_transforms():
         Normalize(mean=MEAN, std=STD),
         ToTensorV2(),
     ], bbox_params={
-        "format": "pascal_voc",
+        "format": "yolo",
         "label_fields": ["labels"],
         "min_visibility": hyps.get("min_visibility", 0.6),
     })

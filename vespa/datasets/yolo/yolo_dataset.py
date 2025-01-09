@@ -50,18 +50,30 @@ class YOLODataset(BaseDataset):
                 class_id, x_center, y_center, width, height = map(float, line.strip().split())
                 labels.append(int(class_id))
 
-                xmin = (x_center - width / 2) * img.shape[1]
-                ymin = (y_center - height / 2) * img.shape[0]
-                xmax = (x_center + width / 2) * img.shape[1]
-                ymax = (y_center + height / 2) * img.shape[0]
-                boxes.append([xmin, ymin, xmax, ymax])
+                # Adiciona as caixas no formato YOLO
+                boxes.append([x_center, y_center, width, height])
 
         # Aplica transformações
         if self.transforms:
-            augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
-            img = augmented["image"]
-            boxes = augmented["bboxes"]
-            labels = augmented["labels"]
+            if "bboxes" in self.transforms.processors:  # Apenas para transformações que processam bboxes
+                augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
+                img = augmented["image"]
+                boxes = augmented["bboxes"]
+                labels = augmented["labels"]
+            else:
+                augmented = self.transforms(image=img)  # Ignora caixas
+                img = augmented["image"]
+
+        # Converte caixas de volta para [x_min, y_min, x_max, y_max]
+        boxes = [
+            [
+                (box[0] - box[2] / 2) * img.shape[1],  # x_min
+                (box[1] - box[3] / 2) * img.shape[0],  # y_min
+                (box[0] + box[2] / 2) * img.shape[1],  # x_max
+                (box[1] + box[3] / 2) * img.shape[0],  # y_max
+            ]
+            for box in boxes
+        ]
 
         target = {
             "boxes": torch.tensor(boxes, dtype=torch.float32),
@@ -69,6 +81,7 @@ class YOLODataset(BaseDataset):
         }
 
         return img, target
+
 
     def __len__(self):
         """
