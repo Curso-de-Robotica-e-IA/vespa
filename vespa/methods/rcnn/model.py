@@ -74,7 +74,6 @@ class RCNN(Module):
     def train_model(  # noqa
         self,
         train_dataset,
-        val_dataset=None,
         batch_size=4,
         epochs=10,
         device: str = 'cuda',
@@ -204,3 +203,109 @@ class RCNN(Module):
             predictions.extend(outputs)
 
         return predictions
+    
+    def validate_model(self, val_dataset, batch_size=4, device='cuda'):
+        """
+        Validate the model and compute average loss on the validation set.
+
+        Args:
+            val_dataset: Validation dataset.
+            batch_size (int): Batch size. Defaults to 4.
+            device (str): Device to evaluate on ('cuda' or 'cpu'). Defaults to 'cuda'.
+
+        Returns:
+            float: Average validation loss.
+        """
+        self.model.eval()
+        self.model.to(device)
+
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            collate_fn=lambda x: tuple(zip(*x)),
+            num_workers=4,
+            pin_memory=True,
+        )
+
+        val_loss = 0.0
+        with torch.no_grad():
+            for images, targets in val_loader:
+                images = [img.to(device) for img in images]
+                targets = [{k: v.to(device) for k, v in t.items()} for t in targets
+                ]
+
+                loss_dict = self.model(images, targets)
+                losses = sum(loss for loss in loss_dict.values())
+                val_loss += losses.item()
+
+        avg_val_loss = val_loss / len(val_loader)
+        print(f'Validation Loss: {avg_val_loss:.4f}')
+        return avg_val_loss
+
+    def save_model(self, path: str):
+        """
+        Save the model and optimizer state.
+
+        Args:
+            path (str): Path to save the model.
+        """
+        torch.save({
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+        }, path)
+        
+    def freeze_backbone(self):
+        """
+        Freeze the backbone of the model to prevent updates during training.
+        """
+        for param in self.model.backbone.parameters():
+            param.requires_grad = False
+
+    def unfreeze_backbone(self):
+        """
+        Unfreeze the backbone of the model to allow updates during training.
+        """
+        for param in self.model.backbone.parameters():
+            param.requires_grad = True
+
+    def adjust_learning_rate(self, new_lr: float):
+        """
+        Adjust the learning rate of the optimizer.
+
+        Args:
+            new_lr (float): New learning rate value.
+        """
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = new_lr
+        print(f'Learning rate adjusted to {new_lr:.6f}')
+
+    def print_model_summary(self):
+        """
+        Print a summary of the model structure.
+        """
+        print(self.model)
+
+    def count_trainable_parameters(self):
+        """
+        Count the number of trainable parameters in the model.
+
+        Returns:
+            int: Number of trainable parameters.
+        """
+        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+
+    def set_optimizer(self, optimizer_name: str, lr: float = 0.0001, weight_decay: float = 0.0001):
+        """
+        Set a new optimizer for the model.
+
+        Args:
+            optimizer_name (str): Name of the optimizer.
+            lr (float): Learning rate. Defaults to 0.0001.
+            weight_decay (float): Weight decay (L2 penalty). Defaults to 0.0001.
+        """
+        self.optimizer_name = optimizer_name
+        self.lr = lr
+        self.weight_decay = weight_decay
+        self.optimizer = self.configure_optimizer()
+        print(f'Optimizer set to {optimizer_name} with learning rate {lr:.6f}')
