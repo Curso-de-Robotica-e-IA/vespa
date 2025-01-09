@@ -1,3 +1,4 @@
+
 import pytest
 
 from vespa.datasets.pascalVOC.pascal_voc_dataset import PascalVOCDataset
@@ -5,9 +6,6 @@ from vespa.datasets.pascalVOC.pascal_voc_transforms import (
     get_pascal_voc_test_transforms,
     get_pascal_voc_train_transforms,
 )
-
-len = 5
-shape = 3
 
 
 @pytest.fixture
@@ -29,7 +27,7 @@ def test_pascal_voc_dataset_length(create_pascal_voc_dataset):
     """
     root_dir = create_pascal_voc_dataset
     dataset = PascalVOCDataset(root_dir=root_dir, transforms=None)
-    assert len(dataset) == len, 'Tamanho do dataset Pascal VOC está incorreto.'
+    assert len(dataset) == 5, "Tamanho do dataset Pascal VOC está incorreto."
 
 
 def test_pascal_voc_dataset_image_shape(create_pascal_voc_dataset):
@@ -39,9 +37,7 @@ def test_pascal_voc_dataset_image_shape(create_pascal_voc_dataset):
     root_dir = create_pascal_voc_dataset
     dataset = PascalVOCDataset(root_dir=root_dir, transforms=None)
     img, _ = dataset[0]
-    assert img.shape == (100, 100, 3), (
-        f'Dimensão da imagem no PascalVOCDataset está incorreta: {img.shape}'
-    )  # noqa
+    assert img.shape == (100, 100, 3), f"Dimensão da imagem no PascalVOCDataset está incorreta: {img.shape}" #noqa
 
 
 def test_pascal_voc_dataset_boxes(create_pascal_voc_dataset):
@@ -52,9 +48,7 @@ def test_pascal_voc_dataset_boxes(create_pascal_voc_dataset):
     root_dir = create_pascal_voc_dataset
     dataset = PascalVOCDataset(root_dir=root_dir, transforms=None)
     _, target = dataset[0]
-    assert len(target['boxes']) > 0, (
-        'Bounding boxes no PascalVOCDataset não foram encontrados.'
-    )  # noqa
+    assert len(target["boxes"]) > 0, "Bounding boxes no PascalVOCDataset não foram encontrados." #noqa
 
 
 def test_pascal_voc_train_transforms_image_shape(create_pascal_voc_dataset):
@@ -68,9 +62,7 @@ def test_pascal_voc_train_transforms_image_shape(create_pascal_voc_dataset):
         transforms=get_pascal_voc_train_transforms(),
     )
     img, _ = dataset[0]
-    assert len(img.shape) == shape, (
-        'Imagem transformada para treino deve ter 3 dimensões.'
-    )  # noqa
+    assert len(img.shape) == 3, "Imagem transformada para treino deve ter 3 dimensões." #noqa
 
 
 def test_pascal_voc_test_transforms_no_bboxes(create_pascal_voc_dataset):
@@ -84,4 +76,4 @@ def test_pascal_voc_test_transforms_no_bboxes(create_pascal_voc_dataset):
         transforms=get_pascal_voc_test_transforms(),
     )
     _, target = dataset[0]
-    assert 'boxes' in target, 'Bounding boxes devem estar presentes no target.'  # noqa
+    assert "boxes" in target, "Bounding boxes devem estar presentes no target." #noqa

@@ -6,6 +6,9 @@ import xml.etree.ElementTree as ET
 
 import pytest
 from PIL import Image
+import torch
+
+from vespa.methods.rcnn.model import RCNN
 
 
 def create_image(images_dir, index):
@@ -177,3 +180,19 @@ def create_pascal_voc_dataset():
     except Exception as e:
         shutil.rmtree(temp_dir)
         raise e
+    
+
+@pytest.fixture
+def tensor_image_fixture():
+    rgb = torch.randn(1, 3, 600, 600)
+    return rgb
+
+    
+@pytest.fixture
+def rcnn_pretrained_fixture():
+    return RCNN()
+
+
+@pytest.fixture
+def rcnn_sketch_fixture():
+    return RCNN(pre_trained=False)
