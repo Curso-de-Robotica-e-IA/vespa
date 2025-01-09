@@ -17,6 +17,95 @@ def create_label(labels_dir, index):
     label_path = os.path.join(labels_dir, f"image_{index}.txt")
     with open(label_path, "w") as file:
         file.write("0 0.1 0.1 0.1 0.1")
+        
+import os
+import xml.etree.ElementTree as ET
+from PIL import Image
+
+
+def create_pascal_voc_annotation(annotations_dir, images_dir, index, class_name):
+    """
+    Cria uma anotação no formato Pascal VOC para uma imagem fictícia.
+
+    Args:
+        annotations_dir (str): Caminho para o diretório de anotações.
+        images_dir (str): Caminho para o diretório de imagens.
+        index (int): Índice da imagem/arquivo.
+        class_name (str): Nome da classe para a anotação.
+    """
+    annotation_path = os.path.join(annotations_dir, f"image_{index}.xml")
+    img_path = os.path.join(images_dir, f"image_{index}.jpg")
+
+    annotation = ET.Element("annotation")
+
+    folder = ET.SubElement(annotation, "folder")
+    folder.text = "images"
+
+    filename = ET.SubElement(annotation, "filename")
+    filename.text = f"image_{index}.jpg"
+
+    path = ET.SubElement(annotation, "path")
+    path.text = img_path
+
+    source = ET.SubElement(annotation, "source")
+    database = ET.SubElement(source, "database")
+    database.text = "Generated"
+
+    size = ET.SubElement(annotation, "size")
+    width = ET.SubElement(size, "width")
+    width.text = "100"
+    height = ET.SubElement(size, "height")
+    height.text = "100"
+    depth = ET.SubElement(size, "depth")
+    depth.text = "3"
+
+    segmented = ET.SubElement(annotation, "segmented")
+    segmented.text = "0"
+
+    obj = ET.SubElement(annotation, "object")
+    name = ET.SubElement(obj, "name")
+    name.text = class_name  # Nome da classe
+
+    pose = ET.SubElement(obj, "pose")
+    pose.text = "Unspecified"
+    truncated = ET.SubElement(obj, "truncated")
+    truncated.text = "0"
+    difficult = ET.SubElement(obj, "difficult")
+    difficult.text = "0"
+
+    bndbox = ET.SubElement(obj, "bndbox")
+    xmin = ET.SubElement(bndbox, "xmin")
+    xmin.text = "20"
+    ymin = ET.SubElement(bndbox, "ymin")
+    ymin.text = "30"
+    xmax = ET.SubElement(bndbox, "xmax")
+    xmax.text = "70"
+    ymax = ET.SubElement(bndbox, "ymax")
+    ymax.text = "80"
+
+    tree = ET.ElementTree(annotation)
+    tree.write(annotation_path)
+
+
+
+def create_kitti_image_and_annotation(images_dir, labels_dir, index):
+    """
+    Cria uma imagem fictícia e uma anotação correspondente no formato KITTI.
+
+    Args:
+        images_dir (str): Caminho para o diretório de imagens.
+        labels_dir (str): Caminho para o diretório de anotações.
+        index (int): Índice da imagem/arquivo a ser criado.
+    """
+    # Criar a imagem fictícia
+    img_path = os.path.join(images_dir, f"image_{index}.png")
+    image = Image.new("RGB", (100, 100), color=(index * 20, index * 30, index * 40))
+    image.save(img_path)
+
+    # Criar a anotação correspondente
+    label_path = os.path.join(labels_dir, f"image_{index}.txt")
+    with open(label_path, "w") as file:
+        file.write("class_0 0 0 0 20 30 70 80\n")
 
 
 @pytest.fixture
@@ -77,3 +166,46 @@ def create_coco_annotations(create_dataset_path_train):
         json.dump(annotations, ann_file)
 
     return root_dir, annotations_path
+
+
+@pytest.fixture
+def create_pascal_voc_dataset():
+    """
+    Cria um dataset temporário no formato Pascal VOC.
+    """
+    temp_dir = tempfile.mkdtemp()
+    try:
+        annotations_dir = os.path.join(temp_dir, "Annotations")
+        images_dir = os.path.join(temp_dir, "JPEGImages")
+        os.makedirs(annotations_dir)
+        os.makedirs(images_dir)
+
+        # Criar 5 pares de imagens e anotações com classes variadas
+        classes = ["class_0", "class_1", "class_2", "class_3", "class_4"]
+        for i in range(5):
+            create_image(images_dir, i)
+            create_pascal_voc_annotation(annotations_dir, images_dir, i, class_name=classes[i % len(classes)])
+
+        return temp_dir
+    except Exception as e:
+        shutil.rmtree(temp_dir)
+        raise e
+
+
+@pytest.fixture
+def create_kitti_dataset():
+    temp_dir = tempfile.mkdtemp()
+    try:
+        labels_dir = os.path.join(temp_dir, "labels")
+        images_dir = os.path.join(temp_dir, "images")
+        os.makedirs(labels_dir)
+        os.makedirs(images_dir)
+
+        # Criar 5 pares de imagens e anotações
+        for i in range(5):
+            create_kitti_image_and_annotation(images_dir, labels_dir, i)
+
+        return images_dir, labels_dir
+    except Exception as e:
+        shutil.rmtree(temp_dir)
+        raise e

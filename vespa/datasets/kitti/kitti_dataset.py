@@ -58,10 +58,14 @@ class KITTIDataset(BaseDataset):
                 boxes.append([xmin, ymin, xmax, ymax])
 
         if self.transforms:
-            augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
-            img = augmented["image"]
-            boxes = augmented["bboxes"]
-            labels = augmented["labels"]
+            if "bboxes" in self.transforms.processors:  # Apenas para transformações que processam bboxes
+                augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
+                img = augmented["image"]
+                boxes = augmented["bboxes"]
+                labels = augmented["labels"]
+            else:
+                augmented = self.transforms(image=img)  # Ignora caixas
+                img = augmented["image"]
 
         target = {
             "boxes": torch.tensor(boxes, dtype=torch.float32),

@@ -17,14 +17,29 @@ class PascalVOCDataset(BaseDataset):
         super().__init__(root_dir, transforms)
         self.image_paths = []
         self.annotation_paths = []
+        self.class_to_idx = {}
 
-        annotations_dir = os.path.join(root_dir, "Annotations")
-        images_dir = os.path.join(root_dir, "JPEGImages")
-
-        for file in os.listdir(annotations_dir):
+        for file in os.listdir(os.path.join(root_dir, "Annotations")):
             if file.endswith(".xml"):
-                self.annotation_paths.append(os.path.join(annotations_dir, file))
-                self.image_paths.append(os.path.join(images_dir, file.replace(".xml", ".jpg")))
+                self.annotation_paths.append(os.path.join(root_dir, "Annotations", file))
+                self.image_paths.append(os.path.join(root_dir, "JPEGImages", file.replace(".xml", ".jpg")))
+
+        self._generate_class_mapping()
+                
+    def _generate_class_mapping(self):
+        """
+        Gera o mapeamento dinâmico de classes para índices numéricos.
+        """
+        class_set = set()
+        for annotation_path in self.annotation_paths:
+            tree = ET.parse(annotation_path)
+            root = tree.getroot()
+            for obj in root.findall("object"):
+                label = obj.find("name").text
+                class_set.add(label)
+
+        # Criar mapeamento ordenado para consistência
+        self.class_to_idx = {label: idx for idx, label in enumerate(sorted(class_set))}
 
     def __getitem__(self, idx):
         """
@@ -50,7 +65,9 @@ class PascalVOCDataset(BaseDataset):
 
         for obj in root.findall("object"):
             label = obj.find("name").text
-            labels.append(label)
+            if label not in self.class_to_idx:
+                raise ValueError(f"Rótulo desconhecido: {label}")
+            labels.append(self.class_to_idx[label])
 
             bbox = obj.find("bndbox")
             xmin = int(bbox.find("xmin").text)
@@ -60,10 +77,14 @@ class PascalVOCDataset(BaseDataset):
             boxes.append([xmin, ymin, xmax, ymax])
 
         if self.transforms:
-            augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
-            img = augmented["image"]
-            boxes = augmented["bboxes"]
-            labels = augmented["labels"]
+            if "bboxes" in self.transforms.processors:  # Apenas para transformações que processam bboxes
+                augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
+                img = augmented["image"]
+                boxes = augmented["bboxes"]
+                labels = augmented["labels"]
+            else:
+                augmented = self.transforms(image=img)  # Ignora caixas
+                img = augmented["image"]
 
         target = {
             "boxes": torch.tensor(boxes, dtype=torch.float32),
@@ -71,6 +92,7 @@ class PascalVOCDataset(BaseDataset):
         }
 
         return img, target
+
 
     def __len__(self):
         """
