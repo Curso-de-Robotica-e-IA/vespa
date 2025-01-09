@@ -9,15 +9,26 @@ readme = "README.md"
 python = "^3.12"
 opencv-python = "^4.10.0.84"
 scikit-learn = "^1.6.0"
-torchvision = "^0.20.1"
 albumentations = "^1.4.24"
 tqdm = "^4.67.1"
 matplotlib = "^3.10.0"
 onnxruntime = "^1.20.1"
 pycocotools = "^2.0.8"
-torch = "^2.5.1"
-pytest = "^8.3.4"
+numpy = "1.26.4"
 
+# Torch 2.2.2 with CUDA 12.1 or higher
+torch = [
+    {url = "https://download.pytorch.org/whl/cu121/torch-2.2.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
+    {url = "https://download.pytorch.org/whl/cu121/torch-2.2.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
+]
+torchaudio = [
+    {url = "https://download.pytorch.org/whl/cu121/torchaudio-2.2.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
+    {url = "https://download.pytorch.org/whl/cu121/torchaudio-2.2.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
+]
+torchvision = [
+    {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
+    {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
+]
 
 [build-system]
 requires = ["poetry-core"]
