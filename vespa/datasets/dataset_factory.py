@@ -1,6 +1,6 @@
-from vespa.datasets.yolo.yolo_dataset import YOLODataset
 from vespa.datasets.coco.coco_dataset import COCODataset
 from vespa.datasets.pascalVOC.pascal_voc_dataset import PascalVOCDataset
+from vespa.datasets.yolo.yolo_dataset import YOLODataset
 
 
 class DatasetFactory:
@@ -14,7 +14,8 @@ class DatasetFactory:
         Cria um dataset com base no tipo especificado.
 
         Args:
-            dataset_type (str): Tipo do dataset (ex.: 'yolo', 'coco', 'pascal_voc', 'kitti').
+            dataset_type (str): Tipo do dataset
+                (ex.: 'yolo', 'coco', 'pascal_voc', 'kitti').
             kwargs (dict): Argumentos necessários para inicializar o dataset.
 
         Returns:
@@ -23,23 +24,23 @@ class DatasetFactory:
         Raises:
             ValueError: Caso o tipo do dataset não seja suportado.
         """
-        if dataset_type == "yolo":
+        if dataset_type == 'yolo':
             return YOLODataset(
-                root_dir=kwargs["root_dir"],
-                txt_file=kwargs["txt_file"],
-                image_size=kwargs["image_size"],
-                transforms=kwargs.get("transforms", None),
+                root_dir=kwargs['root_dir'],
+                txt_file=kwargs['txt_file'],
+                image_size=kwargs['image_size'],
+                transforms=kwargs.get('transforms', None),
             )
-        elif dataset_type == "coco":
+        elif dataset_type == 'coco':
             return COCODataset(
-                root_dir=kwargs["root_dir"],
-                ann_file=kwargs["ann_file"],
-                transforms=kwargs.get("transforms", None),
+                root_dir=kwargs['root_dir'],
+                ann_file=kwargs['ann_file'],
+                transforms=kwargs.get('transforms', None),
             )
-        elif dataset_type == "pascal_voc":
+        elif dataset_type == 'pascal_voc':
             return PascalVOCDataset(
-                root_dir=kwargs["root_dir"],
-                transforms=kwargs.get("transforms", None),
+                root_dir=kwargs['root_dir'],
+                transforms=kwargs.get('transforms', None),
             )
         else:
             raise ValueError(f"Dataset type '{dataset_type}' não suportado.")

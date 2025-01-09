@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from torch.utils.data import Dataset
 
 
@@ -6,6 +7,7 @@ class BaseDataset(Dataset, ABC):
     """
     Classe base abstrata para diferentes formatos de datasets.
     """
+
     def __init__(self, root_dir, transforms=None):
         self.root_dir = root_dir
         self.transforms = transforms
