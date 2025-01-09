@@ -1,134 +1,206 @@
+from typing import Dict, List, Optional
+
+import torch
 from torch.nn import Module
-from torch.optim import LBFGS, SGD, Adadelta, Adagrad, Adam, RMSprop
+from torch.optim import SGD, Adagrad, Adam, RMSprop
 from torch.utils.data import DataLoader
-from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, fasterrcnn_resnet50_fpn
-from torchvision.models.resnet import ResNet50_Weights
+from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 
 class RCNN(Module):
-    def __init__(self, num_classes=9, weights="COCO_V1", *args, **kwargs):
+    def __init__(
+        self,
+        num_classes: int = 9,
+        weights: Optional[str] = 'DEFAULT',
+        optimizer_name: str = 'adam',
+        lr: float = 0.0001,
+        weight_decay: float = 0.0001,
+        **kwargs,
+    ):
         """
-        Inicializa a classe RCNN com o modelo Faster R-CNN ResNet50 FPN.
+        Initializes the RCNN model with customizable parameters.
 
         Args:
-            num_classes (int): Número de classes para o modelo.
-            weights (str): Pesos pré-treinados. Use "COCO_V1".
-            *args: Argumentos adicionais.
-            **kwargs: Argumentos adicionais de palavra-chave.
+            num_classes (int): Number of target classes
+                                (including background).
+            weights (str, optional): Pre-trained weights to use.
+                                     Defaults to "DEFAULT".
+            optimizer_name (str): Name of the optimizer to use.
+                                  Defaults to "adam".
+            lr (float): Learning rate. Defaults to 0.0001.
+            weight_decay (float): Weight decay (L2 penalty).
+                                  Defaults to 0.0001.
+            **kwargs: Additional keyword arguments for flexibility.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
-        if weights == "COCO_V1":
-            weights = FasterRCNN_ResNet50_FPN_Weights.COCO_V1
-            weights_backbone = ResNet50_Weights.IMAGENET1K_V1
-        else:
-            weights = None
-            weights_backbone = None
+        # Load pre-trained model
+        self.model = fasterrcnn_resnet50_fpn_v2(weights=weights)
 
-        self.model = fasterrcnn_resnet50_fpn(
-            weights=weights,
-            weights_backbone=weights_backbone,
-            num_classes=num_classes,
-            args=args,
-            kwargs=kwargs,
+        # Replace the predictor head
+        in_features = self.model.roi_heads.box_predictor.cls_score.in_features
+        self.model.roi_heads.box_predictor = FastRCNNPredictor(
+            in_features, num_classes
         )
 
-        self.configure_optimizer()
+        # Configure optimizer
+        self.optimizer_name = optimizer_name
+        self.lr = lr
+        self.weight_decay = weight_decay
+        self.optimizer = self.configure_optimizer()
+        self.num_classes = num_classes
 
-    def forward(self, x):
+    def forward(
+        self,
+        images: List[torch.Tensor],
+        targets: Optional[List[Dict[str, torch.Tensor]]] = None,
+    ):  # noqa
         """
-        Realiza a passagem forward no modelo.
+        Forward pass for the RCNN model.
 
         Args:
-            x: Entrada do modelo.
+            images (List[torch.Tensor]):
+                List of input images as tensors.
+            targets (List[Dict[str, torch.Tensor]], optional):
+                Target annotations for training.
 
         Returns:
-            Saída do modelo.
+            If training, returns a dict of losses. Otherwise,
+            returns detections.
         """
-        return self.model(x)
+        return self.model(images, targets)
 
-    def train(self, train_dataset, val_dataset=None, batch_size=16, epochs=20, device=0):
+    def train_model(  # noqa
+        self,
+        train_dataset,
+        val_dataset=None,
+        batch_size=4,
+        epochs=10,
+        device: str = 'cuda',
+        grad_clip: Optional[float] = None,
+    ):
         """
-        Treina o modelo usando o conjunto de dados de treino.
+        Train the RCNN model.
 
         Args:
-            train_dataset: Dataset de treinamento.
-            val_dataset: Dataset de validação.
-            batch_size (int): Tamanho do batch.
-            epochs (int): Número de épocas.
-            device: Dispositivo para treinamento (CPU ou GPU).
+            train_dataset: Training dataset.
+            val_dataset: Validation dataset (optional).
+            batch_size (int): Batch size. Defaults to 4.
+            epochs (int): Number of epochs. Defaults to 10.
+            device (str): Device to train on ("cuda" or "cpu").
+                            Defaults to "cuda".
+            grad_clip (float, optional): Max gradient norm for
+                            gradient clipping. Defaults to None.
         """
         self.model.to(device)
 
         train_loader = DataLoader(
             train_dataset,
             batch_size=batch_size,
+            shuffle=True,
             collate_fn=lambda x: tuple(zip(*x)),
+            num_workers=4,
+            pin_memory=True,
         )
 
         for epoch in range(epochs):
             self.model.train()
             epoch_loss = 0.0
 
-            for batch_idx, (images, targets) in enumerate(train_loader):
-                images_list = [image.to(device) for image in images]
-                targets_list = [
+            for images, targets in train_loader:
+                images = [img.to(device) for img in images]  # noqa
+                targets = [
                     {k: v.to(device) for k, v in t.items()} for t in targets
-                ]
+                ]  # noqa
 
-                loss_dict = self.model(images_list, targets_list)
+                loss_dict = self.model(images, targets)
                 losses = sum(loss for loss in loss_dict.values())
 
                 self.optimizer.zero_grad()
                 losses.backward()
+
+                if grad_clip:
+                    torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(), grad_clip
+                    )
+
                 self.optimizer.step()
 
                 epoch_loss += losses.item()
 
-                print("\033[2K\r", end="", flush=True)
-                print(
-                    f"Epoch [{epoch + 1}/{epochs}], Batch [{batch_idx + 1}/{len(train_loader)}] Loss: {losses.item()}\033[0m",
-                    end=" ",
-                    flush=True,
-                )
+            avg_loss = epoch_loss / len(train_loader)
+            print(
+                f'Epoch [{epoch + 1}/{epochs}] - Average Loss: {avg_loss:.4f}'
+            )
 
-            print(f"Average Loss: {epoch_loss / len(train_loader)}")
-
-    def configure_optimizer(self, optim="adam", lr=0.0001, weight_decay=0.0001):
+    def configure_optimizer(self):
         """
-        Configura o otimizador para o modelo.
+        Configure the optimizer based on the selected type.
 
-        Args:
-            optim (str): Tipo de otimizador. Opções: 'adam', 'sgd', 'adadelta', 'adagrad', 'lbfgs', 'rmsprop'.
-            lr (float): Taxa de aprendizado.
-            weight_decay (float): Penalidade L2.
-
-        Raises:
-            ValueError: Se um tipo de otimizador inválido for fornecido.
+        Returns:
+            torch.optim.Optimizer: Configured optimizer instance.
         """
-        if optim == "adam":
-            self.optimizer = Adam(
-                self.model.parameters(), lr=lr, weight_decay=weight_decay
+        optimizer_name = self.optimizer_name.lower()
+
+        if optimizer_name == 'adam':
+            return Adam(
+                self.model.parameters(),
+                lr=self.lr,
+                weight_decay=self.weight_decay,
             )
-        elif optim == "sgd":
-            self.optimizer = SGD(
-                self.model.parameters(), lr=lr, weight_decay=weight_decay
+        elif optimizer_name == 'sgd':
+            return SGD(
+                self.model.parameters(),
+                lr=self.lr,
+                momentum=0.9,
+                weight_decay=self.weight_decay,
             )
-        elif optim == "adadelta":
-            self.optimizer = Adadelta(
-                self.model.parameters(), lr=lr, weight_decay=weight_decay
+        elif optimizer_name == 'adagrad':
+            return Adagrad(
+                self.model.parameters(),
+                lr=self.lr,
+                weight_decay=self.weight_decay,
             )
-        elif optim == "adagrad":
-            self.optimizer = Adagrad(
-                self.model.parameters(), lr=lr, weight_decay=weight_decay
-            )
-        elif optim == "lbfgs":
-            self.optimizer = LBFGS(
-                self.model.parameters(), lr=lr, weight_decay=weight_decay
-            )
-        elif optim == "rmsprop":
-            self.optimizer = RMSprop(
-                self.model.parameters(), lr=lr, weight_decay=weight_decay
+        elif optimizer_name == 'rmsprop':
+            return RMSprop(
+                self.model.parameters(),
+                lr=self.lr,
+                weight_decay=self.weight_decay,
             )
         else:
-            raise ValueError("Invalid optimizer")
+            raise ValueError(f'Unsupported optimizer: {self.optimizer_name}')
+
+    @torch.no_grad()
+    def evaluate(self, val_dataset, batch_size=4, device='cuda'):
+        """
+        Evaluate the RCNN model.
+
+        Args:
+            val_dataset: Validation dataset.
+            batch_size (int): Batch size. Defaults to 4.
+            device (str): Device to evaluate on ("cuda" or "cpu").
+                          Defaults to "cuda".
+
+        Returns:
+            List[Dict]: List of predictions.
+        """
+        self.model.eval()
+        self.model.to(device)
+
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            collate_fn=lambda x: tuple(zip(*x)),
+            num_workers=4,
+            pin_memory=True,
+        )
+
+        predictions = []
+        for images, _ in val_loader:
+            images = [img.to(device) for img in images]  # noqa
+            outputs = self.model(images)
+            predictions.extend(outputs)
+
+        return predictions
