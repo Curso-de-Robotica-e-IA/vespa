@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 
 import torch
+from sklearn.metrics import precision_recall_fscore_support
 from torch.nn import Module
 from torch.optim import SGD, Adagrad, Adam, RMSprop
 from torch.utils.data import DataLoader
@@ -109,7 +110,7 @@ class RCNN(Module):
 
             for images, targets in train_loader:
                 images = [img.to(device) for img in images]  # noqa
-                targets = [
+                targets = [  # noqa
                     {k: v.to(device) for k, v in t.items()} for t in targets
                 ]  # noqa
 
@@ -203,7 +204,7 @@ class RCNN(Module):
             predictions.extend(outputs)
 
         return predictions
-    
+
     def validate_model(self, val_dataset, batch_size=4, device='cuda'):
         """
         Validate the model and compute average loss on the validation set.
@@ -211,7 +212,8 @@ class RCNN(Module):
         Args:
             val_dataset: Validation dataset.
             batch_size (int): Batch size. Defaults to 4.
-            device (str): Device to evaluate on ('cuda' or 'cpu'). Defaults to 'cuda'.
+            device (str): Device to evaluate on ('cuda' or 'cpu').
+                          Defaults to 'cuda'.
 
         Returns:
             float: Average validation loss.
@@ -231,8 +233,10 @@ class RCNN(Module):
         val_loss = 0.0
         with torch.no_grad():
             for images, targets in val_loader:
-                images = [img.to(device) for img in images]
-                targets = [{k: v.to(device) for k, v in t.items()} for t in targets
+                images = [img.to(device) for img in images]  # noqa
+                targets = [  # noqa
+                    {k: v.to(device) for k, v in t.items()}
+                    for t in targets  # noqa
                 ]
 
                 loss_dict = self.model(images, targets)
@@ -250,11 +254,14 @@ class RCNN(Module):
         Args:
             path (str): Path to save the model.
         """
-        torch.save({
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-        }, path)
-        
+        torch.save(
+            {
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            },
+            path,
+        )
+
     def freeze_backbone(self):
         """
         Freeze the backbone of the model to prevent updates during training.
@@ -293,23 +300,31 @@ class RCNN(Module):
         Returns:
             int: Number of trainable parameters.
         """
-        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        return sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )  # noqa
 
-    def set_optimizer(self, optimizer_name: str, lr: float = 0.0001, weight_decay: float = 0.0001):
+    def set_optimizer(
+        self,
+        optimizer_name: str,
+        lr: float = 0.0001,
+        weight_decay: float = 0.0001,
+    ):
         """
         Set a new optimizer for the model.
 
         Args:
             optimizer_name (str): Name of the optimizer.
             lr (float): Learning rate. Defaults to 0.0001.
-            weight_decay (float): Weight decay (L2 penalty). Defaults to 0.0001.
+            weight_decay (float): Weight decay (L2 penalty).
+                                  Defaults to 0.0001.
         """
         self.optimizer_name = optimizer_name
         self.lr = lr
         self.weight_decay = weight_decay
         self.optimizer = self.configure_optimizer()
         print(f'Optimizer set to {optimizer_name} with learning rate {lr:.6f}')
-        
+
     @torch.no_grad()
     def test_model(self, test_dataset, batch_size=4, device='cuda'):
         """
@@ -318,12 +333,12 @@ class RCNN(Module):
         Args:
             test_dataset: Test dataset.
             batch_size (int): Batch size. Defaults to 4.
-            device (str): Device to test on ('cuda' or 'cpu'). Defaults to 'cuda'.
+            device (str): Device to test on ('cuda' or 'cpu').
+                          Defaults to 'cuda'.
 
         Returns:
             Dict[str, float]: Dictionary containing evaluation metrics.
         """
-        from sklearn.metrics import precision_recall_fscore_support
 
         self.model.eval()
         self.model.to(device)
@@ -341,7 +356,7 @@ class RCNN(Module):
         all_labels = []
 
         for images, targets in test_loader:
-            images = [img.to(device) for img in images]
+            images = [img.to(device) for img in images]  # noqa
             outputs = self.model(images)
 
             for output, target in zip(outputs, targets):
@@ -362,4 +377,3 @@ class RCNN(Module):
 
         print(f'Test Metrics: {metrics}')
         return metrics
-    

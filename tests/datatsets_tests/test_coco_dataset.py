@@ -57,7 +57,7 @@ def test_coco_dataset_boxes_exist(create_coco_annotations):
     _, target = dataset[0]
     assert len(target['boxes']) > 0, (
         'Bounding boxes no COCODataset não foram encontrados.'
-    )  # noqa
+    )
 
 
 def test_coco_train_transforms_image_shape(create_coco_annotations):
@@ -68,9 +68,9 @@ def test_coco_train_transforms_image_shape(create_coco_annotations):
         transforms=get_coco_train_transforms(),
     )
     img, _ = dataset[0]
-    assert len(img.shape) == 3, (
+    assert len(img.shape) == 3, (  # noqa
         'Imagem transformada para treino deve ter 3 dimensões.'
-    )  # noqa
+    )
 
 
 def test_coco_train_transforms_boxes(create_coco_annotations):
@@ -97,9 +97,9 @@ def test_coco_test_transforms_image_shape(create_coco_annotations):
         transforms=get_coco_test_transforms(),
     )
     img, _ = dataset[0]
-    assert len(img.shape) == 3, (
+    assert len(img.shape) == 3, (  # noqa
         'Imagem transformada para teste deve ter 3 dimensões.'
-    )  # noqa
+    )
 
 
 def test_coco_test_transforms_no_bboxes(create_coco_annotations):
@@ -114,5 +114,5 @@ def test_coco_test_transforms_no_bboxes(create_coco_annotations):
     )
     _, target = dataset[0]
     assert 'boxes' in target, (
-        'Bounding boxes devem ser incluídas no target, mesmo sem transformações.'
-    )  # noqa
+        'Bounding boxes devem ser incluídas no target, mesmo sem transformações.'  # noqa
+    )

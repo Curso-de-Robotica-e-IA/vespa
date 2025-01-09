@@ -65,7 +65,7 @@ def test_pascal_voc_train_transforms_image_shape(create_pascal_voc_dataset):
         transforms=get_pascal_voc_train_transforms(),
     )
     img, _ = dataset[0]
-    assert len(img.shape) == 3, (
+    assert len(img.shape) == 3, (  # noqa
         'Imagem transformada para treino deve ter 3 dimensões.'
     )  # noqa
 

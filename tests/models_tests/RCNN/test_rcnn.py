@@ -1,5 +1,6 @@
 import torch
 from torch import Tensor
+
 from vespa.methods.rcnn.model import RCNN
 
 
@@ -54,15 +55,21 @@ def test_model_labels(rcnn_pretrained_fixture, tensor_image_fixture):
 
 def test_rcnn_pretrained_initialization(rcnn_pretrained_fixture):
     model = rcnn_pretrained_fixture
-    assert hasattr(model.model, "roi_heads"), "Pretrained RCNN model should have an ROI head"
+    assert hasattr(model.model, 'roi_heads'), (
+        'Pretrained RCNN model should have an ROI head'
+    )  # noqa
 
 
 def test_rcnn_sketch_initialization(rcnn_sketch_fixture):
     model = rcnn_sketch_fixture
-    assert hasattr(model.model, "roi_heads"), "Custom RCNN model should have an ROI head"
+    assert hasattr(model.model, 'roi_heads'), (
+        'Custom RCNN model should have an ROI head'
+    )  # noqa
 
 
 def test_rcnn_optimizer_configuration():
-    model = RCNN(optimizer_name = 'sgd')
+    model = RCNN(optimizer_name='sgd')
     model.configure_optimizer()
-    assert isinstance(model.optimizer, torch.optim.SGD), "Optimizer should be SGD when configured"
+    assert isinstance(model.optimizer, torch.optim.SGD), (
+        'Optimizer should be SGD when configured'
+    )  # noqa
