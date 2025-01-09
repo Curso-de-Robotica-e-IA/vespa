@@ -1,5 +1,5 @@
 import yaml
-from albumentations import Compose, HorizontalFlip, RandomBrightnessContrast, ShiftScaleRotate, Normalize
+from albumentations import Compose, HorizontalFlip, RandomBrightnessContrast, Affine, Normalize
 from albumentations.pytorch import ToTensorV2
 from vespa.datasets.config import MEAN, STD, load_hyperparams
 
@@ -17,11 +17,11 @@ def get_kitti_train_transforms():
             brightness_limit=hyps.get("brightness_limit", 0.3),
             contrast_limit=hyps.get("contrast_limit", 0.3),
         ),
-        ShiftScaleRotate(
+        Affine(
             p=hyps.get("shift_scale_rotate", 0.3),
-            shift_limit=hyps.get("shift_limit", 0.1),
-            scale_limit=hyps.get("scale_limit", 0.2),
-            rotate_limit=hyps.get("rotate_limit", 10),
+            translate_percent={"x": hyps.get("shift_limit", 0.1), "y": hyps.get("shift_limit", 0.1)},
+            scale=(1 - hyps.get("scale_limit", 0.2), 1 + hyps.get("scale_limit", 0.2)),
+            rotate=(-hyps.get("rotate_limit", 10), hyps.get("rotate_limit", 10)),
         ),
         Normalize(mean=MEAN, std=STD),
         ToTensorV2(),

@@ -1,6 +1,6 @@
 from albumentations import (
     Compose, HorizontalFlip, RandomBrightnessContrast, HueSaturationValue,
-    ShiftScaleRotate, Normalize
+    Affine, Normalize
 )
 from albumentations.pytorch import ToTensorV2
 from vespa.datasets.config import MEAN, STD, load_hyperparams
@@ -20,11 +20,11 @@ def get_coco_train_transforms():
                 brightness_limit=hyps.get("brightness_limit", 0.25),
                 contrast_limit=hyps.get("contrast_limit", 0.25),
             ),
-            ShiftScaleRotate(
+            Affine(
                 p=hyps.get("shift_scale_rotate", 0.3),
-                shift_limit=hyps.get("shift_limit", 0.05),
-                scale_limit=hyps.get("scale_limit", 0.2),
-                rotate_limit=hyps.get("rotate_limit", 10),
+                translate_percent={"x": hyps.get("shift_limit", 0.05), "y": hyps.get("shift_limit", 0.05)},
+                scale=(1 - hyps.get("scale_limit", 0.2), 1 + hyps.get("scale_limit", 0.2)),
+                rotate=(-hyps.get("rotate_limit", 10), hyps.get("rotate_limit", 10)),
             ),
             HueSaturationValue(
                 p=hyps.get("hue_saturation_value", 0.4),
