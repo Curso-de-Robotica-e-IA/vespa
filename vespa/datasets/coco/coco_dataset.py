@@ -21,7 +21,7 @@ class COCODataset(BaseDataset):
 
     def __getitem__(self, idx):
         """
-        Retorna a imagem e os alvos associados ao índice fornecido.
+        Retorna uma amostra do dataset no formato esperado pelo PyTorch.
 
         Args:
             idx (int): Índice do item.
@@ -45,11 +45,17 @@ class COCODataset(BaseDataset):
             boxes.append([xmin, ymin, xmin + width, ymin + height])
             labels.append(ann["category_id"])
 
+        # Verifica se as transformações suportam `bboxes`
         if self.transforms:
-            augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
-            img = augmented["image"]
-            boxes = augmented["bboxes"]
-            labels = augmented["labels"]
+            if self.transforms.processors.get("bboxes"):  # Verifica se bbox_params está definido
+                augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
+                img = augmented["image"]
+                boxes = augmented["bboxes"]
+                labels = augmented["labels"]
+            else:
+                # Transformações de teste/validação sem `bboxes`
+                augmented = self.transforms(image=img)
+                img = augmented["image"]
 
         target = {
             "boxes": torch.tensor(boxes, dtype=torch.float32),
@@ -57,6 +63,7 @@ class COCODataset(BaseDataset):
         }
 
         return img, target
+
 
     def __len__(self):
         """

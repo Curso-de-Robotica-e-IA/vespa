@@ -36,7 +36,7 @@ def get_coco_train_transforms():
             ToTensorV2(),
         ],
         bbox_params={
-            "format": "pascal_voc",
+            "format": "coco",
             "label_fields": ["labels"],
             "min_visibility": hyps.get("min_visibility", 0.5),
         },
