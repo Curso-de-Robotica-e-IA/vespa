@@ -1,7 +1,6 @@
 from vespa.datasets.yolo.yolo_dataset import YOLODataset
 from vespa.datasets.coco.coco_dataset import COCODataset
 from vespa.datasets.pascalVOC.pascal_voc_dataset import PascalVOCDataset
-from vespa.datasets.kitti.kitti_dataset import KITTIDataset
 
 
 class DatasetFactory:
@@ -40,12 +39,6 @@ class DatasetFactory:
         elif dataset_type == "pascal_voc":
             return PascalVOCDataset(
                 root_dir=kwargs["root_dir"],
-                transforms=kwargs.get("transforms", None),
-            )
-        elif dataset_type == "kitti":
-            return KITTIDataset(
-                root_dir=kwargs["root_dir"],
-                label_dir=kwargs["label_dir"],
                 transforms=kwargs.get("transforms", None),
             )
         else:
