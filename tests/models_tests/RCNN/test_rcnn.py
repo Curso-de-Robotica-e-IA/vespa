@@ -1,6 +1,5 @@
 import torch
 from torch import Tensor
-from torch.utils.data import DataLoader
 from vespa.methods.rcnn.model import RCNN
 
 
