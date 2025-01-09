@@ -29,6 +29,27 @@ torchvision = [
     {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
     {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
 ]
+ruff = "^0.9.0"
+pytest = "^8.3.4"
+taskipy = "^1.14.1"
+
+[tool.ruff]
+line-length = 79
+extend-exclude = ['migrations']
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT']
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+docstring-code-format = true
+docstring-code-line-length = 20
+
+[tool.taskipy.tasks]
+lint = 'ruff check . && ruff check . --diff'
+format = 'ruff check . --fix && ruff format' 
 
 [build-system]
 requires = ["poetry-core"]
