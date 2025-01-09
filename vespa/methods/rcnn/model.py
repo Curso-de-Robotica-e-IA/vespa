@@ -309,3 +309,57 @@ class RCNN(Module):
         self.weight_decay = weight_decay
         self.optimizer = self.configure_optimizer()
         print(f'Optimizer set to {optimizer_name} with learning rate {lr:.6f}')
+        
+    @torch.no_grad()
+    def test_model(self, test_dataset, batch_size=4, device='cuda'):
+        """
+        Test the RCNN model and compute evaluation metrics.
+
+        Args:
+            test_dataset: Test dataset.
+            batch_size (int): Batch size. Defaults to 4.
+            device (str): Device to test on ('cuda' or 'cpu'). Defaults to 'cuda'.
+
+        Returns:
+            Dict[str, float]: Dictionary containing evaluation metrics.
+        """
+        from sklearn.metrics import precision_recall_fscore_support
+
+        self.model.eval()
+        self.model.to(device)
+
+        test_loader = DataLoader(
+            test_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            collate_fn=lambda x: tuple(zip(*x)),
+            num_workers=4,
+            pin_memory=True,
+        )
+
+        all_preds = []
+        all_labels = []
+
+        for images, targets in test_loader:
+            images = [img.to(device) for img in images]
+            outputs = self.model(images)
+
+            for output, target in zip(outputs, targets):
+                preds = output['labels'].cpu().numpy()
+                labels = target['labels'].cpu().numpy()
+                all_preds.extend(preds)
+                all_labels.extend(labels)
+
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_preds, average='weighted'
+        )
+
+        metrics = {
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1,
+        }
+
+        print(f'Test Metrics: {metrics}')
+        return metrics
+    
