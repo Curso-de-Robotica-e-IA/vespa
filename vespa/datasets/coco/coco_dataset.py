@@ -1,23 +1,39 @@
 import os
-import json
 import cv2
-from pycocotools.coco import COCO
 import torch
+from pycocotools.coco import COCO
 from vespa.datasets.base_dataset import BaseDataset
 
 
 class COCODataset(BaseDataset):
     def __init__(self, root_dir, ann_file, transforms=None):
+        """
+        Inicializa o dataset COCO.
+
+        Args:
+            root_dir (str): Diretório raiz das imagens.
+            ann_file (str): Caminho para o arquivo de anotações COCO.
+            transforms (callable, optional): Transformações a serem aplicadas nas imagens e anotações.
+        """
         super().__init__(root_dir, transforms)
         self.coco = COCO(ann_file)
         self.image_ids = list(self.coco.imgs.keys())
 
     def __getitem__(self, idx):
+        """
+        Retorna a imagem e os alvos associados ao índice fornecido.
+
+        Args:
+            idx (int): Índice do item.
+
+        Returns:
+            tuple: Imagem transformada e dicionário com alvos (caixas e rótulos).
+        """
         image_id = self.image_ids[idx]
         annotations = self.coco.loadAnns(self.coco.getAnnIds(imgIds=image_id))
         img_info = self.coco.loadImgs(image_id)[0]
-        img_path = os.path.join(self.root_dir, img_info['file_name'])
-        
+        img_path = os.path.join(self.root_dir, img_info["file_name"])
+
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -25,9 +41,9 @@ class COCODataset(BaseDataset):
         labels = []
 
         for ann in annotations:
-            xmin, ymin, width, height = ann['bbox']
+            xmin, ymin, width, height = ann["bbox"]
             boxes.append([xmin, ymin, xmin + width, ymin + height])
-            labels.append(ann['category_id'])
+            labels.append(ann["category_id"])
 
         if self.transforms:
             augmented = self.transforms(image=img, bboxes=boxes, labels=labels)
@@ -43,4 +59,10 @@ class COCODataset(BaseDataset):
         return img, target
 
     def __len__(self):
+        """
+        Retorna o tamanho do dataset.
+
+        Returns:
+            int: Número de imagens no dataset.
+        """
         return len(self.image_ids)

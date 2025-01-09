@@ -20,7 +20,7 @@ class YOLODataset(BaseDataset):
         img = cv2.resize(img, (self.image_size, self.image_size))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        label_path = img_path.replace('\images', '\labels').replace('.jpg', '.txt')
+        label_path = img_path.replace('\\images', '\\labels').replace('.jpg', '.txt')
 
         if not os.path.exists(label_path):
             raise FileNotFoundError(f"Rótulo não encontrado: {label_path}")
