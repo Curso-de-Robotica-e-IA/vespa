@@ -27,6 +27,11 @@ class BaseModel(ABC, Module):
     def test(self, test_dataset, batch_size: int, device: str):
         """Evaluate the model on the test dataset."""
         pass
+    
+    @abstractmethod
+    def predict(self, *args, **kwargs):
+        """Performs inferences on the model given an unlabeled dataset."""
+        pass
 
     @abstractmethod
     def save(self, path: str):

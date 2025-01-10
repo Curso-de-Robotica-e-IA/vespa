@@ -199,6 +199,28 @@ class RCNN(BaseModel):
 
         print(f'Test Metrics: {metrics}')
         return metrics
+    
+    @torch.no_grad()
+    def predict(self, images: List[torch.Tensor], device: str = 'cuda') -> List[Dict[str, torch.Tensor]]:
+        """
+        Performs inferences on the model given an unlabeled dataset.
+
+        Args:
+
+            images (List[torch.Tensor]): List of image tensors.
+            device (str): Device for inference ('cuda' or 'cpu').
+            
+        Returns:
+
+            List[Dict[str, torch.Tensor]]: List of predictions for each image.
+        """
+        self.model.eval()
+        self.model.to(device)
+
+        images = [img.to(device) for img in images]
+        outputs = self.model(images)
+
+        return outputs
 
     def save(self, path: str):
         torch.save({'model_state_dict': self.model.state_dict(), 'optimizer_state_dict': self.optimizer.state_dict()}, path)
