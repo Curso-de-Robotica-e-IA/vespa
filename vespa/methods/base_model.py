@@ -47,12 +47,4 @@ class BaseModel(ABC, Module):
     def print_model_summary(self):
         """Print a summary of the model architecture."""
         pass
-
-    @abstractmethod
-    def count_trainable_parameters(self) -> int:
-        """Count the number of trainable parameters."""
-        pass
-
-    def custom_collate_fn(self, batch):
-        """Custom collate function for DataLoader."""
-        return tuple(zip(*batch))
+    
