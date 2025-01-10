@@ -75,7 +75,7 @@ class RCNN(Module):
     def train_model(  # noqa
         self,
         train_dataset,
-        batch_size=4,
+        batch_size=0,
         epochs=10,
         device: str = 'cuda',
         grad_clip: Optional[float] = None,
@@ -99,7 +99,7 @@ class RCNN(Module):
             train_dataset,
             batch_size=batch_size,
             shuffle=True,
-            collate_fn=lambda x: tuple(zip(*x)),
+            collate_fn=self.custom_collate_fn,
             num_workers=4,
             pin_memory=True,
         )
@@ -192,7 +192,7 @@ class RCNN(Module):
             val_dataset,
             batch_size=batch_size,
             shuffle=False,
-            collate_fn=lambda x: tuple(zip(*x)),
+            collate_fn=self.custom_collate_fn,
             num_workers=4,
             pin_memory=True,
         )
@@ -225,7 +225,7 @@ class RCNN(Module):
             val_dataset,
             batch_size=batch_size,
             shuffle=False,
-            collate_fn=lambda x: tuple(zip(*x)),
+            collate_fn=self.custom_collate_fn,
             num_workers=4,
             pin_memory=True,
         )
@@ -324,6 +324,12 @@ class RCNN(Module):
         self.weight_decay = weight_decay
         self.optimizer = self.configure_optimizer()
         print(f'Optimizer set to {optimizer_name} with learning rate {lr:.6f}')
+        
+    def custom_collate_fn(self, batch):
+        """
+        Função de colagem para combinar imagens e anotações.
+        """
+        return tuple(zip(*batch))
 
     @torch.no_grad()
     def test_model(self, test_dataset, batch_size=4, device='cuda'):
@@ -347,7 +353,7 @@ class RCNN(Module):
             test_dataset,
             batch_size=batch_size,
             shuffle=False,
-            collate_fn=lambda x: tuple(zip(*x)),
+            collate_fn=self.custom_collate_fn,
             num_workers=4,
             pin_memory=True,
         )
