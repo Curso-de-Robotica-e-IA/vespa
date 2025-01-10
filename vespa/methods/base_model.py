@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
-import torch
+
 from torch.nn import Module
-from torch.utils.data import DataLoader
+
 
 class BaseModel(ABC, Module):
     def __init__(self):
@@ -27,7 +26,7 @@ class BaseModel(ABC, Module):
     def test(self, test_dataset, batch_size: int, device: str):
         """Evaluate the model on the test dataset."""
         pass
-    
+
     @abstractmethod
     def predict(self, *args, **kwargs):
         """Performs inferences on the model given an unlabeled dataset."""
@@ -47,4 +46,3 @@ class BaseModel(ABC, Module):
     def print_model_summary(self):
         """Print a summary of the model architecture."""
         pass
-    

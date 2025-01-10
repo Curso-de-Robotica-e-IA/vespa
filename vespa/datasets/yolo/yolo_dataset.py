@@ -32,27 +32,32 @@ class YOLODataset(BaseDataset):
             idx (int): Índice do item.
 
         Returns:
-            tuple: Imagem transformada e dicionário com alvos (caixas e rótulos).
+            tuple: Imagem transformada e dicionário com alvos
+                   (caixas e rótulos).
         """
-        img_path = os.path.normpath(os.path.join(self.root_dir, self.images[idx]))
+        img_path = os.path.normpath(
+            os.path.join(self.root_dir, self.images[idx])
+        )
         img = cv2.imread(img_path)
         if img is None:
-            raise FileNotFoundError(f"Imagem não encontrada: {img_path}")
+            raise FileNotFoundError(f'Imagem não encontrada: {img_path}')
 
         img = cv2.resize(img, (self.image_size, self.image_size))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         # Construa o caminho do rótulo
-        label_path = img_path.replace(os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep).replace('.jpg', '.txt')
+        label_path = img_path.replace(
+            os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep
+        ).replace('.jpg', '.txt')  # noqa
         label_path = os.path.normpath(label_path)
 
         if not os.path.exists(label_path):
-            raise FileNotFoundError(f"Rótulo não encontrado: {label_path}")
+            raise FileNotFoundError(f'Rótulo não encontrado: {label_path}')
 
         boxes = []
         labels = []
 
-        with open(label_path) as f:
+        with open(label_path) as f:  # noqa
             for line in f.readlines():
                 class_id, x_center, y_center, width, height = map(
                     float, line.strip().split()
@@ -62,16 +67,16 @@ class YOLODataset(BaseDataset):
 
         # Aplica transformações
         if self.transforms:
-            if "bboxes" in self.transforms.processors:
+            if 'bboxes' in self.transforms.processors:
                 augmented = self.transforms(
                     image=img, bboxes=boxes, labels=labels
                 )
-                img = augmented["image"]
-                boxes = augmented["bboxes"]
-                labels = augmented["labels"]
+                img = augmented['image']
+                boxes = augmented['bboxes']
+                labels = augmented['labels']
             else:
                 augmented = self.transforms(image=img)
-                img = augmented["image"]
+                img = augmented['image']
 
         # Converte boxes do formato YOLO para PASCAL VOC
         boxes = [
@@ -85,8 +90,8 @@ class YOLODataset(BaseDataset):
         ]
 
         target = {
-            "boxes": torch.tensor(boxes, dtype=torch.float32),
-            "labels": torch.tensor(labels, dtype=torch.int64),
+            'boxes': torch.tensor(boxes, dtype=torch.float32),
+            'labels': torch.tensor(labels, dtype=torch.int64),
         }
 
         return img, target

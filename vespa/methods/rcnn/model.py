@@ -1,11 +1,13 @@
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 import torch
-from torch.utils.data import DataLoader
 from sklearn.metrics import precision_recall_fscore_support
+from torch.utils.data import DataLoader
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from vespa.methods.utils import configure_optimizer, custom_collate_fn
+
 from vespa.methods.base_model import BaseModel
+from vespa.methods.utils import configure_optimizer, custom_collate_fn
 
 
 class RCNN(BaseModel):
@@ -15,13 +17,17 @@ class RCNN(BaseModel):
         weights: Optional[str] = 'DEFAULT',
         optimizer_name: str = 'adam',
         lr: float = 0.0001,
-        weight_decay: float = 0.0001
-        ):
+        weight_decay: float = 0.0001,
+    ):
         super().__init__()
         self.model = fasterrcnn_resnet50_fpn_v2(weights=weights)
         in_features = self.model.roi_heads.box_predictor.cls_score.in_features
-        self.model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
-        self.optimizer = configure_optimizer(self.model, optimizer_name, lr, weight_decay)
+        self.model.roi_heads.box_predictor = FastRCNNPredictor(
+            in_features, num_classes
+        )
+        self.optimizer = configure_optimizer(
+            self.model, optimizer_name, lr, weight_decay
+        )
         self.num_classes = num_classes
 
     def forward(
@@ -199,9 +205,11 @@ class RCNN(BaseModel):
 
         print(f'Test Metrics: {metrics}')
         return metrics
-    
+
     @torch.no_grad()
-    def predict(self, images: List[torch.Tensor], device: str = 'cuda') -> List[Dict[str, torch.Tensor]]:
+    def predict(
+        self, images: List[torch.Tensor], device: str = 'cuda'
+    ) -> List[Dict[str, torch.Tensor]]:
         """
         Performs inferences on the model given an unlabeled dataset.
 
@@ -209,7 +217,7 @@ class RCNN(BaseModel):
 
             images (List[torch.Tensor]): List of image tensors.
             device (str): Device for inference ('cuda' or 'cpu').
-            
+
         Returns:
 
             List[Dict[str, torch.Tensor]]: List of predictions for each image.
@@ -223,7 +231,13 @@ class RCNN(BaseModel):
         return outputs
 
     def save(self, path: str):
-        torch.save({'model_state_dict': self.model.state_dict(), 'optimizer_state_dict': self.optimizer.state_dict()}, path)
+        torch.save(
+            {
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            },
+            path,
+        )
 
     def load(self, path: str):
         checkpoint = torch.load(path)
@@ -234,8 +248,10 @@ class RCNN(BaseModel):
         print(self.model)
 
     def count_trainable_parameters(self) -> int:
-        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-    
+        return sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )  # noqa
+
     def freeze_backbone(self):
         """
         Freeze the backbone of the model to prevent updates during training.

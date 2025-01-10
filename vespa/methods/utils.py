@@ -1,6 +1,12 @@
-from torch.optim import Adam, SGD, RMSprop, Adagrad
+from torch.optim import SGD, Adagrad, Adam, RMSprop
 
-def configure_optimizer(model, optimizer_name: str, lr: float = 0.0001, weight_decay: float = 0.0001):
+
+def configure_optimizer(
+    model,
+    optimizer_name: str,
+    lr: float = 0.0001,
+    weight_decay: float = 0.0001,
+):
     """
     Configure the optimizer for a given model.
 
@@ -17,16 +23,17 @@ def configure_optimizer(model, optimizer_name: str, lr: float = 0.0001, weight_d
     if optimizer_name == 'adam':
         return Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     elif optimizer_name == 'sgd':
-        return SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
+        return SGD(
+            model.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay
+        )
     elif optimizer_name == 'rmsprop':
         return RMSprop(model.parameters(), lr=lr, weight_decay=weight_decay)
     elif optimizer_name == 'adagrad':
         return Adagrad(model.parameters(), lr=lr, weight_decay=weight_decay)
     else:
-        raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+        raise ValueError(f'Unsupported optimizer: {optimizer_name}')
 
 
 def custom_collate_fn(batch):
     """Custom collate function for DataLoader."""
     return tuple(zip(*batch))
-
