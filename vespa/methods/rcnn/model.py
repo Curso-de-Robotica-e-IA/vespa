@@ -7,7 +7,7 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 from vespa.methods.base_model import BaseModel
-from vespa.methods.utils import configure_optimizer, custom_collate_fn
+from vespa.methods.utils import configure_optimizer, custom_collate_fn, calculate_metrics
 
 
 class RCNN(BaseModel):
@@ -19,6 +19,21 @@ class RCNN(BaseModel):
         lr: float = 0.0001,
         weight_decay: float = 0.0001,
     ):
+        """
+        Initialize the RCNN model with the given parameters.
+
+        Args:
+            num_classes (int): Number of classes for detection.
+                            Defaults to 9.
+            weights (Optional[str]): Pretrained weights to use.
+                            Defaults to 'DEFAULT'.
+            optimizer_name (str): Name of the optimizer.
+                            Defaults to 'adam'.
+            lr (float): Learning rate for the optimizer.
+                            Defaults to 0.0001.
+            weight_decay (float): Weight decay for the optimizer.
+                            Defaults to 0.0001.
+        """
         super().__init__()
         self.model = fasterrcnn_resnet50_fpn_v2(weights=weights)
         in_features = self.model.roi_heads.box_predictor.cls_score.in_features
@@ -193,15 +208,7 @@ class RCNN(BaseModel):
                 all_preds.extend(preds)
                 all_labels.extend(labels)
 
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            all_labels, all_preds, average='weighted'
-        )
-
-        metrics = {
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1,
-        }
+        metrics = calculate_metrics(all_labels, all_preds)
 
         print(f'Test Metrics: {metrics}')
         return metrics
@@ -229,50 +236,3 @@ class RCNN(BaseModel):
         outputs = self.model(images)
 
         return outputs
-
-    def save(self, path: str):
-        torch.save(
-            {
-                'model_state_dict': self.model.state_dict(),
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            },
-            path,
-        )
-
-    def load(self, path: str):
-        checkpoint = torch.load(path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-    def print_model_summary(self):
-        print(self.model)
-
-    def count_trainable_parameters(self) -> int:
-        return sum(
-            p.numel() for p in self.model.parameters() if p.requires_grad
-        )  # noqa
-
-    def freeze_backbone(self):
-        """
-        Freeze the backbone of the model to prevent updates during training.
-        """
-        for param in self.model.backbone.parameters():
-            param.requires_grad = False
-
-    def unfreeze_backbone(self):
-        """
-        Unfreeze the backbone of the model to allow updates during training.
-        """
-        for param in self.model.backbone.parameters():
-            param.requires_grad = True
-
-    def adjust_learning_rate(self, new_lr: float):
-        """
-        Adjust the learning rate of the optimizer.
-
-        Args:
-            new_lr (float): New learning rate value.
-        """
-        for param_group in self.optimizer.param_groups:
-            param_group['lr'] = new_lr
-        print(f'Learning rate adjusted to {new_lr:.6f}')

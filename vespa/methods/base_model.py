@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 
 from torch.nn import Module
+from vespa.methods.model_utils import ModelUtils
 
 
-class BaseModel(ABC, Module):
+class BaseModel(ABC, Module, ModelUtils):
     def __init__(self):
         super().__init__()
 
@@ -31,18 +32,4 @@ class BaseModel(ABC, Module):
     def predict(self, *args, **kwargs):
         """Performs inferences on the model given an unlabeled dataset."""
         pass
-
-    @abstractmethod
-    def save(self, path: str):
-        """Save the model's state and optimizer."""
-        pass
-
-    @abstractmethod
-    def load(self, path: str):
-        """Load the model's state and optimizer from a file."""
-        pass
-
-    @abstractmethod
-    def print_model_summary(self):
-        """Print a summary of the model architecture."""
-        pass
+    
