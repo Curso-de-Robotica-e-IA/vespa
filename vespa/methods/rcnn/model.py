@@ -40,7 +40,7 @@ class RCNN(BaseModel):
         self.model.roi_heads.box_predictor = FastRCNNPredictor(
             in_features, num_classes
         )
-        self.optimizer = configure_optimizer(
+        self.optimizer = self.configure_optimizer(
             self.model, optimizer_name, lr, weight_decay
         )
         self.num_classes = num_classes
@@ -92,7 +92,7 @@ class RCNN(BaseModel):
             train_dataset,
             batch_size=batch_size,
             shuffle=True,
-            collate_fn=custom_collate_fn,
+            collate_fn=self.custom_collate_fn,
             num_workers=4,
             pin_memory=True,
         )
@@ -147,7 +147,7 @@ class RCNN(BaseModel):
             val_dataset,
             batch_size=batch_size,
             shuffle=False,
-            collate_fn=custom_collate_fn,
+            collate_fn=self.custom_collate_fn,
             num_workers=4,
             pin_memory=True,
         )
@@ -190,7 +190,7 @@ class RCNN(BaseModel):
             test_dataset,
             batch_size=batch_size,
             shuffle=False,
-            collate_fn=custom_collate_fn,
+            collate_fn=self.custom_collate_fn,
             num_workers=4,
             pin_memory=True,
         )
