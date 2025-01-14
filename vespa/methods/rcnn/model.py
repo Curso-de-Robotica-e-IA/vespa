@@ -7,7 +7,7 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 from vespa.methods.base_model import BaseModel
-from vespa.methods.utils import configure_optimizer, custom_collate_fn, calculate_metrics
+from vespa.methods.model_utils import configure_optimizer, custom_collate_fn, calculate_metrics
 
 
 class RCNN(BaseModel):
