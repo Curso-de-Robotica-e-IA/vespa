@@ -1,7 +1,6 @@
 from typing import Dict, List, Optional
 
 import torch
-from sklearn.metrics import precision_recall_fscore_support
 from torch.utils.data import DataLoader
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
