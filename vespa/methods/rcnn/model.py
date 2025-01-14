@@ -7,7 +7,6 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 from vespa.methods.base_model import BaseModel
-from vespa.methods.model_utils import configure_optimizer, custom_collate_fn, calculate_metrics
 
 
 class RCNN(BaseModel):
@@ -208,7 +207,7 @@ class RCNN(BaseModel):
                 all_preds.extend(preds)
                 all_labels.extend(labels)
 
-        metrics = calculate_metrics(all_labels, all_preds)
+        metrics = self.calculate_metrics(all_labels, all_preds)
 
         print(f'Test Metrics: {metrics}')
         return metrics
