@@ -31,8 +31,8 @@ class RetinaNet(Module):
     def forward(self, x):
         return self.model(x)
 
-    def train(
-        self, train_dataset, val_dataset, batch_size, epochs=20, device=0
+    def fit(
+        self, train_dataset, batch_size, epochs=20, device=0
     ):
         # Load model on gpu
         self.model.to(device)
