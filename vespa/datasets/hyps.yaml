@@ -1,0 +1,48 @@
+Datasets:
+  YOLO:
+    horizontal_flip: 0.5
+    brightness_limit: 0.3
+    contrast_limit: 0.3
+    random_brightness_contrast: 0.4
+    shift_scale_rotate: 0.3
+    shift_limit: 0.05
+    scale_limit: 0.2
+    rotate_limit: 15
+    min_visibility: 0.6
+
+  COCO:
+    horizontal_flip: 0.4
+    brightness_limit: 0.25
+    contrast_limit: 0.25
+    random_brightness_contrast: 0.3
+    hue_saturation_value: 0.4
+    hue_shift_limit: 10
+    sat_shift_limit: 15
+    val_shift_limit: 10
+    shift_scale_rotate: 0.3
+    shift_limit: 0.05
+    scale_limit: 0.2
+    rotate_limit: 10
+    min_visibility: 0.5
+
+  PascalVOC:
+    horizontal_flip: 0.6
+    brightness_limit: 0.3
+    contrast_limit: 0.3
+    random_brightness_contrast: 0.4
+    shift_scale_rotate: 0.4
+    shift_limit: 0.05
+    scale_limit: 0.3
+    rotate_limit: 20
+    min_visibility: 0.6
+
+  KITTI:
+    horizontal_flip: 0.5
+    brightness_limit: 0.3
+    contrast_limit: 0.3
+    random_brightness_contrast: 0.4
+    shift_scale_rotate: 0.3
+    shift_limit: 0.1
+    scale_limit: 0.2
+    rotate_limit: 10
+    min_visibility: 0.7
