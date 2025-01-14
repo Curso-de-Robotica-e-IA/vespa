@@ -1,5 +1,6 @@
 from torch import Tensor
 
+
 def test_model_list(retina_pretrained_fixture, tensor_image_fixture):
     model = retina_pretrained_fixture
     image = tensor_image_fixture
@@ -43,3 +44,4 @@ def test_model_labels(retina_pretrained_fixture, tensor_image_fixture):
 
     for result in results:
         assert isinstance(result['labels'], Tensor)
+

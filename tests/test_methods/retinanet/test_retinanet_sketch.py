@@ -1,5 +1,6 @@
 from torch import Tensor
 
+
 def test_model_list(retina_sketch_fixture, tensor_image_fixture):
     model = retina_sketch_fixture
     image = tensor_image_fixture
