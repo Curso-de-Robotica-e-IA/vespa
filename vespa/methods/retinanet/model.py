@@ -118,7 +118,3 @@ class RetinaNet(Module):
             )
         else:
             raise ValueError('Invalid optimizer')
-        )
-    
-    def forward(self, x):
-        return self.model(x)
