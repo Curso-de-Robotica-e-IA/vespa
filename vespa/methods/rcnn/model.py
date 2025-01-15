@@ -50,7 +50,7 @@ class RCNN(BaseModel):
         """
         return self.model(images, targets)
 
-    def train(
+    def fit(
         self,
         train_dataset,
         batch_size=0,

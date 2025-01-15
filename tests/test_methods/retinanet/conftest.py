@@ -1,4 +1,5 @@
 import pytest
+
 from vespa.methods.retinanet.model import RetinaNet
 
 
@@ -6,7 +7,7 @@ from vespa.methods.retinanet.model import RetinaNet
 def retina_pretrained_fixture():
     return RetinaNet()
 
+
 @pytest.fixture
 def retina_sketch_fixture():
-    return RetinaNet(pre_trained=False)
-
+    return RetinaNet(weights=None)
