@@ -8,18 +8,18 @@ from vespa.datasets.base_dataset import BaseDataset
 
 
 class COCODataset(BaseDataset):
-    def __init__(self, root_dir, ann_file, transforms=None):
+    def __init__(self, root_dir, txt_file, transforms=None):
         """
         Inicializa o dataset COCO.
 
         Args:
             root_dir (str): Diretório raiz das imagens.
-            ann_file (str): Caminho para o arquivo de anotações COCO.
+            txt_file (str): Caminho para o arquivo de anotações COCO.
             transforms (callable, optional): Transformações a serem
                                 aplicadas nas imagens e anotações.
         """
         super().__init__(root_dir, transforms)
-        self.coco = COCO(ann_file)
+        self.coco = COCO(txt_file)
         self.image_ids = list(self.coco.imgs.keys())
 
     def __getitem__(self, idx):

@@ -9,7 +9,6 @@ def test_model_list(retina_pretrained_fixture, tensor_image_fixture):
 
     assert isinstance(results, list)
 
-
 def test_model_dict(retina_pretrained_fixture, tensor_image_fixture):
     model = retina_pretrained_fixture
     image = tensor_image_fixture
@@ -18,7 +17,6 @@ def test_model_dict(retina_pretrained_fixture, tensor_image_fixture):
 
     for result in results:
         assert isinstance(result, dict)
-
 
 def test_model_boxes(retina_pretrained_fixture, tensor_image_fixture):
     model = retina_pretrained_fixture
@@ -29,7 +27,6 @@ def test_model_boxes(retina_pretrained_fixture, tensor_image_fixture):
     for result in results:
         assert isinstance(result['boxes'], Tensor)
 
-
 def test_model_scores(retina_pretrained_fixture, tensor_image_fixture):
     model = retina_pretrained_fixture
     image = tensor_image_fixture
@@ -39,7 +36,6 @@ def test_model_scores(retina_pretrained_fixture, tensor_image_fixture):
     for result in results:
         assert isinstance(result['scores'], Tensor)
 
-
 def test_model_labels(retina_pretrained_fixture, tensor_image_fixture):
     model = retina_pretrained_fixture
     image = tensor_image_fixture
@@ -48,3 +44,4 @@ def test_model_labels(retina_pretrained_fixture, tensor_image_fixture):
 
     for result in results:
         assert isinstance(result['labels'], Tensor)
+

@@ -15,6 +15,9 @@ matplotlib = "^3.10.0"
 onnxruntime = "^1.20.1"
 pycocotools = "^2.0.8"
 numpy = "1.26.4"
+ruff = "^0.9.0"
+pytest = "^8.3.4"
+taskipy = "^1.14.1"
 
 # Torch 2.2.2 with CUDA 12.1 or higher
 torch = [
@@ -29,9 +32,6 @@ torchvision = [
     {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
     {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
 ]
-ruff = "^0.9.0"
-pytest = "^8.3.4"
-taskipy = "^1.14.1"
 
 [tool.ruff]
 line-length = 79

@@ -6,11 +6,6 @@ from vespa.datasets.yolo.yolo_transforms import (
     get_yolo_train_transforms,
 )
 
-len = 5
-shape = 3
-min = 0.0
-max = 100.0
-
 
 @pytest.fixture
 def yolo_dataset(create_yolo_dataset):
@@ -87,9 +82,9 @@ def test_yolo_train_transforms_image_shape(create_dataset_path_train):
         transforms=get_yolo_train_transforms(),
     )
     img, _ = dataset[0]
-    assert len(img.shape) == shape, (
+    assert len(img.shape) == 3, (  # noqa
         'Imagem transformada para treino deve ter 3 dimensões.'
-    )  # noqa
+    )
 
 
 def test_yolo_train_transforms_boxes(create_dataset_path_train):
@@ -105,9 +100,9 @@ def test_yolo_train_transforms_boxes(create_dataset_path_train):
     )
     _, target = dataset[0]
     for box in target['boxes']:
-        assert all(min <= coord <= max for coord in box), (
+        assert all(0.0 <= coord <= 100.0 for coord in box), (  # noqa
             'Bounding boxes estão fora do intervalo esperado.'
-        )  # noqa
+        )
 
 
 def test_yolo_test_transforms_image_shape(create_dataset_path_train):
@@ -122,9 +117,9 @@ def test_yolo_test_transforms_image_shape(create_dataset_path_train):
         transforms=get_yolo_test_transforms(),
     )
     img, _ = dataset[0]
-    assert len(img.shape) == shape, (
+    assert len(img.shape) == 3, (  # noqa
         'Imagem transformada para teste deve ter 3 dimensões.'
-    )  # noqa
+    )
 
 
 def test_yolo_test_transforms_no_bboxes(create_dataset_path_train):

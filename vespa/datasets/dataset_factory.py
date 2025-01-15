@@ -34,7 +34,7 @@ class DatasetFactory:
         elif dataset_type == 'coco':
             return COCODataset(
                 root_dir=kwargs['root_dir'],
-                ann_file=kwargs['ann_file'],
+                txt_file=kwargs['txt_file'],
                 transforms=kwargs.get('transforms', None),
             )
         elif dataset_type == 'pascal_voc':
