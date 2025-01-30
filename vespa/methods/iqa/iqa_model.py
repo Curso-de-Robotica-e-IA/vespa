@@ -6,23 +6,23 @@ class IQABaseModel(ABC, Module):
     def __init__(self):
         super().__init__()
 
-    @abstractmethod
-    def foward(self, *args, **kwargs):
-        """perform the forward pass."""
-        pass
+    # @abstractmethod
+    # def forward(self, *args, **kwargs):
+    #     """perform the forward pass."""
+    #     pass
 
     @abstractmethod
-    def train(self, train_dataset, batch_size: int, epochs: int, device: str):
+    def train(self, train_dataset, batch_size: int, epochs: int):
         """Train the model on the provided dataset."""
         pass
 
     @abstractmethod
-    def valid(self, val_dataset, batch_size: int, device: str):
+    def valid(self, val_dataset, batch_size: int):
         """Validate the model on the provided dataset."""
         pass
 
     @abstractmethod
-    def test(self, test_dataset, batch_size: int, device: str):
+    def test(self, test_dataset, batch_size: int):
         """Evaluate the model on the test dataset."""
         pass
 
