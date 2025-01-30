@@ -9,5 +9,5 @@ def retina_pretrained_fixture():
 
 
 @pytest.fixture
-def retina_sketch_fixture():
+def retina_sketch_fixture() -> RetinaNet:
     return RetinaNet(weights=None)
