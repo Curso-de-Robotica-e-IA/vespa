@@ -14,10 +14,10 @@ class DatasetUtils:
                     labels.append(int(class_id))
                     
                     # YOLO usa coordenadas normalizadas, converte para formato [xmin, ymin, xmax, ymax]
-                    xmin = (x_center - width / 2) * img.shape[1]
-                    ymin = (y_center - height / 2) * img.shape[0]
-                    xmax = (x_center + width / 2) * img.shape[1]
-                    ymax = (y_center + height / 2) * img.shape[0]
+                    xmin = int((x_center - width / 2) * image.shape[1])
+                    ymin = int((y_center - height / 2) * image.shape[0])
+                    xmax = int((x_center + width / 2) * image.shape[1])
+                    ymax = int((y_center + height / 2) * image.shape[0])
                     boxes.append([xmin, ymin, xmax, ymax])
         
         # Converte caixas e rótulos para numpy
@@ -27,11 +27,11 @@ class DatasetUtils:
         # Aplica transformações Albumentations, se houver
         if transforms and train_mode:
             augmented = transforms(image=image, bboxes=boxes, labels=labels)
-            img = augmented["image"]
+            image = augmented["image"]
             boxes = augmented["bboxes"]
             labels = augmented["labels"]
         elif transforms:
-            img = transforms(image)
+            image = transforms(image)
         
         # Converte bboxes de volta para tensor se não estiver vazio
         if len(boxes) > 0:
@@ -52,9 +52,15 @@ class DatasetUtils:
         # Converte para tensores PyTorch
         image_id = torch.tensor([idx])
 
-        return {
+        target = {
             "boxes": boxes,
             "labels": labels,
             "image_id": image_id,
             "area": area,
         }
+
+        return image, target
+    
+    @staticmethod
+    def yolo_to_rcnn():
+        ...
