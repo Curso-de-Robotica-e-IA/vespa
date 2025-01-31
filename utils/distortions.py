@@ -410,9 +410,8 @@ def impulse_noise(x: torch.Tensor, d: float, s_vs_p: float = 0.5) -> torch.Tenso
 
     coords_salt = coords[:num_salt].transpose(1, 0)
     coords_pepper = coords[num_salt:].transpose(1, 0)
-
-    x[coords_salt] = 1
-    x[coords_pepper] = 0
+    x[*coords_salt] = 1
+    x[*coords_pepper] = 0
 
     return x
 

@@ -40,7 +40,7 @@ class KADIS700Dataset(Dataset):
                  pristine_prob: float = 0.05):
 
         root = Path(root)
-        filenames_csv_path = PROJECT_ROOT / "data" / "synthetic_filenames.csv"
+        filenames_csv_path = PROJECT_ROOT / "vespa/datasets/iqa_datasets" / "synthetic_filenames.csv"
         if not filenames_csv_path.exists():
             self._generate_filenames_csv(root, filenames_csv_path)
         df = pd.read_csv(filenames_csv_path)

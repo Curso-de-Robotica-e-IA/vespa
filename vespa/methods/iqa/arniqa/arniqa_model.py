@@ -4,7 +4,6 @@ import pickle
 import numpy as np
 import random
 import torch
-import torch.nn as nn
 from typing import Tuple, List
 from PIL import Image
 from envs.ARNIQA.Lib.datetime import datetime
@@ -28,10 +27,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 SEED = 27
-DATA_BASE_PATH = "datasets/"
+DATA_BASE_PATH = Path(r'\\192.168.155.240\Robotica\dataset_iqa')
 NUM_SPLITS = 10
 ALPHA = 0.1
-VAL_DATASETS = ['live', 'csiq', 'tid2013', 'kadid10k', 'flive', 'spaq', 'koniq10k']
+VAL_DATASETS = ['koniq10k']
 
 synthetic_datasets = ["live", "csiq", "tid2013", "kadid10k"]
 authentic_datasets = ["flive", "spaq", "koniq10k"]
@@ -84,7 +83,7 @@ class ARNIQAModel(IQABaseModel):
                                              max_distortions=4,
                                              num_levels=5,
                                              pristine_prob=0.05)
-        train_dataloader = DataLoader(kadis_dataset, batch_size=16, num_workers=20, shuffle=True,
+        train_dataloader = DataLoader(kadis_dataset, batch_size=4, num_workers=4, shuffle=True,
                                       pin_memory=True, drop_last=True)
         self.train_dataloader = train_dataloader
 
@@ -139,7 +138,7 @@ class ARNIQAModel(IQABaseModel):
 
                 distortion_functions = np.array(batch["distortion_functions"]).T  # Handle PyTorch's indexing of lists
                 distortion_functions = [list(filter(None,el)) for el in distortion_functions]  # Remove padding
-                distrotion_values = torch.stack(batch["distortion_values"]).T  # Handle PyTorch's indexing of lists
+                distortion_values = torch.stack(batch["distortion_values"]).T  # Handle PyTorch's indexing of lists
                 distortion_values = [el[el != torch.inf] for el in distortion_values]  # Remove padding
 
                 # Zero the parameter gradients
@@ -353,9 +352,7 @@ class ARNIQAModel(IQABaseModel):
                                                                                                      phase, alpha,
                                                                                                      grid_search,
                                                                                                      batch_size,
-                                                                                                     num_workers,
-                                                                                                     self.device,
-                                                                                                     eval_type)
+                                                                                                     num_workers)
             srocc_all[d] = srocc_dataset
             plcc_all[d] = plcc_dataset
             regressors[d] = regressor
@@ -568,6 +565,8 @@ class ARNIQAModel(IQABaseModel):
 
 if __name__ == "__main__":
     arniqa = ARNIQAModel()
-    arniqa.load(model_path=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\ARNIQA.pth",
-                regressor_path=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\regressor_koniq10k.pth")
-    print(f"01: {arniqa.predict(r"C:\Users\phavm\Documents\dev\python\ARNIQA\assets\01.png")}")
+    # arniqa.load(model_path=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\ARNIQA.pth",
+    #             regressor_path=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\regressor_koniq10k.pth")
+    # print(f"01: {arniqa.predict(r"C:\Users\phavm\Documents\dev\python\ARNIQA\assets\01.png")}")
+    #arniqa.train(4, 1)
+    arniqa.test(4)
