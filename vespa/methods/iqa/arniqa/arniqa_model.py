@@ -6,7 +6,7 @@ import random
 import torch
 from typing import Tuple, List
 from PIL import Image
-from envs.ARNIQA.Lib.datetime import datetime
+from datetime import datetime
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tqdm import tqdm
@@ -30,7 +30,7 @@ SEED = 27
 DATA_BASE_PATH = Path(r'\\192.168.155.240\Robotica\dataset_iqa')
 NUM_SPLITS = 10
 ALPHA = 0.1
-VAL_DATASETS = ['koniq10k']
+VAL_DATASETS = ['live']
 
 synthetic_datasets = ["live", "csiq", "tid2013", "kadid10k"]
 authentic_datasets = ["flive", "spaq", "koniq10k"]
@@ -74,8 +74,9 @@ class ARNIQAModel(IQABaseModel):
                                                                                  verbose=False)
         self.scaler = torch.cuda.amp.GradScaler()
 
-        self.checkpoint_path = r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa"
+        self.checkpoint_path = Path(r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa")
         self.train_dataloader = None
+        self.weights_path = None
 
     def _load_kadis700(self):
         kadis_dataset = KADIS700Dataset(root=f'{DATA_BASE_PATH}/KADIS700',
@@ -90,6 +91,7 @@ class ARNIQAModel(IQABaseModel):
     def load(self, model_path: str, regressor_path: str):
         self.arniqa_predictor = ARNIQAPredictor(model_path, regressor_path)
         self.arniqa_predictor.eval().to(self.device)
+        self.weights_path = model_path
 
     def predict(self, image_path: str):
         img = Image.open(image_path).convert('RGB')
@@ -182,6 +184,7 @@ class ARNIQAModel(IQABaseModel):
                     os.remove(self.checkpoint_path / best_model_filename)  # Remove previous best model
                     best_model_filename = f'best_epoch_{epoch}_srocc_{best_srocc:.3f}_plcc_{best_plcc:.3f}.pth'
                     torch.save(self.clr.state_dict(), self.checkpoint_path / best_model_filename)
+                    self.weights_path = self.checkpoint_path / best_model_filename
 
             # Save last checkpoint
             if last_model_filename:
@@ -206,7 +209,7 @@ class ARNIQAModel(IQABaseModel):
         srocc_all, plcc_all, _, _, _ = self.get_results(data_base_path=DATA_BASE_PATH, datasets=VAL_DATASETS,
                                                         num_splits=NUM_SPLITS, phase="val", alpha=ALPHA,
                                                         grid_search=False, crop_size=224, batch_size=batch_size,
-                                                        num_workers=20)
+                                                        num_workers=0)
 
         # Compute the median for each list in srocc_all and plcc_all
         srocc_all_median = {key: np.median(value["global"]) for key, value in srocc_all.items()}
@@ -221,13 +224,18 @@ class ARNIQAModel(IQABaseModel):
     def test(self, batch_size: int):
         """
             Test pretrained model on the test datasets. Performs a grid search over the validation splits to find the best
-            alpha value for the regression for each dataset. Saves a CSV file with the results and a pickle file with the
-            regressor for each dataset.
+            alpha value for the regression for each dataset.
 
             Args:
                 batch_size (int): Batch size used for training.
         """
+
+        if self.weights_path:
+            checkpoint = torch.load(self.weights_path)
+            self.clr.load_state_dict(checkpoint, strict=True)
+
         self.clr.eval()
+        self.clr.to(self.device)
 
         sroc_all, plcc_all, regressors, alphas, best_worst_results_all = self.get_results(data_base_path=DATA_BASE_PATH,
                                                                                           datasets=VAL_DATASETS,
@@ -237,7 +245,7 @@ class ARNIQAModel(IQABaseModel):
                                                                                           grid_search=True,
                                                                                           crop_size=224,
                                                                                           batch_size=batch_size,
-                                                                                          num_workers=20,
+                                                                                          num_workers=0,
                                                                                           eval_type="scratch")
 
         # Compute the median for each list in srocc_all and plcc_all
@@ -265,10 +273,10 @@ class ARNIQAModel(IQABaseModel):
         print(f"{'Authentic avg':<15} {srocc_authentic_avg:<15.4f} {plcc_authentic_avg:<15.4f}")
 
         for dataset, regressor in regressors.items():
-            filename = f"{dataset}_srocc_{srocc_all_median[dataset]:.4f}_plcc_{plcc_all_median[dataset]:.4f}.pkl"
-            with open(filename, "wb") as f:
+            filename = (f"{datetime.now().strftime('%d_%m_%Y_%H:%M:%S')}_{dataset}_srocc_"
+                        f"{srocc_all_median[dataset]:.4f}_plcc_{plcc_all_median[dataset]:.4f}.pkl")
+            with open(self.checkpoint_path / filename, "wb") as f:
                 pickle.dump(regressor, f)
-
 
     def get_results(self,
                     data_base_path: Path,
@@ -359,7 +367,7 @@ class ARNIQAModel(IQABaseModel):
             alphas[d] = alpha
             best_worst_results_all[d] = best_worst_results
             print(f"{datetime.now().strftime("%d/%m/%Y %H:%M:%S")} - {dataset_name}:"
-                  f"SRCC: {np.media(srocc_dataset['global']):.3f} - PLCC: {np.median(plcc_dataset['global']):.3f}")
+                  f"SRCC: {np.median(srocc_dataset['global']):.3f} - PLCC: {np.median(plcc_dataset['global']):.3f}")
 
         return srocc_all, plcc_all, regressors, alphas, best_worst_results_all
 
@@ -423,7 +431,7 @@ class ARNIQAModel(IQABaseModel):
 
             dist_indices = None
             if dataset.is_synthetic:
-                dist_indices = {dist_types: np.where(dataset.distortion_types[test_indices] == dist_type)[0] for
+                dist_indices = {dist_type: np.where(dataset.distortion_types[test_indices] == dist_type)[0] for
                                 dist_type in dist_types}
 
                 # for each index generate 5 indices (one for each crop)
@@ -496,7 +504,7 @@ class ARNIQAModel(IQABaseModel):
 
             img_orig = rearrange(img_orig, "b n c h w -> (b n) c h w")
             img_ds = rearrange(img_ds, "b n c h w -> (b n) c h w")
-            mos = mos.repeat_interleaves(5)  # repeat MOS for each crop
+            mos = mos.repeat_interleave(5)  # repeat MOS for each crop
 
             with torch.cuda.amp.autocast(), torch.no_grad():
                 if eval_type == "scratch":
@@ -531,15 +539,15 @@ class ARNIQAModel(IQABaseModel):
         """
         grid_search_range = [1e-3, 1e3, 100]
         alphas = np.geomspace(*grid_search_range, endpoint=True)
-        srocc_all = [[] for _ in range(alphas)]
+        srocc_all = [[] for _ in range(len(alphas))]
 
         for i in range(num_splits):
             train_indices = dataset.get_split_indices(split=i, phase="train")
             val_indices = dataset.get_split_indices(split=i, phase="val")
 
             # for each index generate 5 indices (one for each crop)
-            train_indices = np.repeat(train_indices * 5, 5) + np.title(np.arange(5), len(train_indices))
-            val_indices = np.repeat(val_indices * 5, 5) + np.title(np.arange(5), len(val_indices))
+            train_indices = np.repeat(train_indices * 5, 5) + np.tile(np.arange(5), len(train_indices))
+            val_indices = np.repeat(val_indices * 5, 5) + np.tile(np.arange(5), len(val_indices))
 
             train_features = features[train_indices]
             train_scores = scores[train_indices]
