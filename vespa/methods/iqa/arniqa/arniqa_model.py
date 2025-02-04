@@ -88,7 +88,8 @@ class ARNIQAModel(IQABaseModel):
                                       pin_memory=True, drop_last=True)
         self.train_dataloader = train_dataloader
 
-    def load(self, model_path: str, regressor_path: str):
+    def load(self, model_path: str=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\pretrained\ARNIQA.pth",
+             regressor_path: str=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\pretrained\regressor_koniq10k.pth"):
         self.arniqa_predictor = ARNIQAPredictor(model_path, regressor_path)
         self.arniqa_predictor.eval().to(self.device)
         self.weights_path = model_path
@@ -104,6 +105,7 @@ class ARNIQAModel(IQABaseModel):
         img_ds = self.preprocess(img_ds).unsqueeze(0).to(self.device)
 
         with torch.no_grad(), torch.amp.autocast("cuda"):
+            self.arniqa_predictor.eval()
             score = self.arniqa_predictor(img, img_ds, return_embedding=False, scale_score=True)
         return score.item()
 
@@ -569,12 +571,3 @@ class ARNIQAModel(IQABaseModel):
         best_alpha = alphas[best_alpha_idx]
 
         return best_alpha
-
-
-if __name__ == "__main__":
-    arniqa = ARNIQAModel()
-    # arniqa.load(model_path=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\ARNIQA.pth",
-    #             regressor_path=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\regressor_koniq10k.pth")
-    # print(f"01: {arniqa.predict(r"C:\Users\phavm\Documents\dev\python\ARNIQA\assets\01.png")}")
-    #arniqa.train(4, 1)
-    arniqa.test(4)
