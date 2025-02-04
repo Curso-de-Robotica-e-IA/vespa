@@ -31,7 +31,7 @@ class DatasetUtils:
             boxes = augmented["bboxes"]
             labels = augmented["labels"]
         elif transforms:
-            image = transforms(image)
+            image = transforms(image=image)
         
         # Converte bboxes de volta para tensor se não estiver vazio
         if len(boxes) > 0:

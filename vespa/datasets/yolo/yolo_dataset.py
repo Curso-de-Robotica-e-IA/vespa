@@ -27,14 +27,8 @@ class YOLODataset(BaseDataset):
         # Lê o arquivo txt com as imagens e labels
         with open(self.txt_file_path) as f:
             self.images = f.read().strip().split("\n")
-
-            self.labels = [label.replace('.jpg', '.txt')
-                           .replace('/images/', '/labels/')
-                            for label in self.images]
-        
         
         self.verify_images()
-        self.verify_labels()
     
     def verify_labels(self):
         before_size = len(self.labels)
@@ -53,8 +47,11 @@ class YOLODataset(BaseDataset):
     def verify_images(self):
         before_size = self.__len__()
         confirms = [os.path.normpath(os.path.join(self.root_dir, image)) 
-                    for image in tqdm(self.images) 
-                    if os.path.isfile(os.path.normpath(os.path.join(self.root_dir, image)))]
+        for image in tqdm(self.images) 
+        if os.path.isfile(os.path.normpath(os.path.join(self.root_dir, image)))
+        and os.path.isfile(os.path.normpath(os.path.join(self.root_dir, 
+        image.replace('/images/', '/labels/').replace('.jpg', '.txt'))))]
+
         self.images = confirms
 
         if self.__len__() == 0:
@@ -73,15 +70,20 @@ class YOLODataset(BaseDataset):
             tuple: Imagem transformada e dicionário com alvos
                    (caixas e rótulos).
         """
-        img = cv2.imread(self.images[idx])
+        img_path = self.images[idx]
+        img = cv2.imread(img_path)
         if img is None:
-            raise FileNotFoundError(f'Image not found: {self.images[idx]}')
+            raise FileNotFoundError(f'Image not found: {img_path}')
 
         img = cv2.resize(img, (self.image_size, self.image_size))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         # Construa o caminho do rótulo
-        label_path = self.labels[idx]
+        label_path = img_path.replace(
+            os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep
+        ).replace('.jpg', '.txt')  # noqa
+        label_path = os.path.normpath(label_path)
+
         if not os.path.exists(label_path):
             raise FileNotFoundError(f'Label not found: {label_path}')
 
