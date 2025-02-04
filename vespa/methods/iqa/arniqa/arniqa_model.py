@@ -273,9 +273,9 @@ class ARNIQAModel(IQABaseModel):
         print(f"{'Authentic avg':<15} {srocc_authentic_avg:<15.4f} {plcc_authentic_avg:<15.4f}")
 
         for dataset, regressor in regressors.items():
-            filename = (f"{datetime.now().strftime('%d_%m_%Y_%H:%M:%S')}_{dataset}_srocc_"
+            filename = (f"{datetime.now().strftime('%d_%m_%Y')}_{dataset}_srocc_"
                         f"{srocc_all_median[dataset]:.4f}_plcc_{plcc_all_median[dataset]:.4f}.pkl")
-            with open(self.checkpoint_path / filename, "wb") as f:
+            with open(str(self.checkpoint_path / filename), "wb") as f:
                 pickle.dump(regressor, f)
 
     def get_results(self,
