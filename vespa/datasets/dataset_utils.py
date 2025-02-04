@@ -3,7 +3,7 @@ import torch
 
 class DatasetUtils:
     @staticmethod
-    def yolo_to_retinanet(idx, image, label_path, transforms=None, train_mode=True):
+    def yolo_to_retinanet(idx, image, label_path, transforms=None):
         boxes = []
         labels = []
 
@@ -24,13 +24,14 @@ class DatasetUtils:
         boxes = np.array(boxes, dtype=np.float32)
         labels = np.array(labels, dtype=np.int64)
 
-        # Aplica transformações Albumentations, se houver
-        if transforms and train_mode:
+        # Try apply Albumentations transforms
+        try:
             augmented = transforms(image=image, bboxes=boxes, labels=labels)
             image = augmented["image"]
             boxes = augmented["bboxes"]
             labels = augmented["labels"]
-        elif transforms:
+        except:
+            # If val transform was used, don't need apply augmentations
             image = transforms(image=image)
         
         # Converte bboxes de volta para tensor se não estiver vazio

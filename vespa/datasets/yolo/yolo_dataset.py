@@ -8,7 +8,7 @@ from vespa.datasets.config import MEAN_YOLO, STD_YOLO
 from vespa.datasets.yolo.yolo_transforms import get_yolo_test_transforms
 
 class YOLODataset(BaseDataset):
-    def __init__(self, root_dir, txt_file, image_size, transforms=None, model: str=None, train_mode = True):
+    def __init__(self, root_dir, txt_file, image_size, transforms=None, model: str=None):
         """
         Inicializa o dataset YOLO.
 
@@ -22,7 +22,6 @@ class YOLODataset(BaseDataset):
         super().__init__(root_dir, transforms, model)
         self.image_size = image_size
         self.txt_file_path = os.path.join(root_dir, txt_file)
-        self.train_mode = train_mode
 
         # Lê o arquivo txt com as imagens e labels
         with open(self.txt_file_path) as f:
@@ -88,7 +87,7 @@ class YOLODataset(BaseDataset):
             raise FileNotFoundError(f'Label not found: {label_path}')
 
         if self.model == 'retinanet':
-            return self.yolo_to_retinanet(idx, img, label_path, self.transforms, self.train_mode)
+            return self.yolo_to_retinanet(idx, img, label_path, self.transforms)
 
         return img
 
@@ -105,6 +104,5 @@ if __name__ == '__main__':
     d = YOLODataset(root_dir=r'\\192.168.155.240\Robotica\CME\dataset_cme_v4\laparoscopia_06-2024\tools - v2',
                     txt_file='train.txt', image_size=640,
                     transforms=get_yolo_test_transforms(),
-                    model='retinanet',
-                    train_mode=False)
+                    model='retinanet')
     print(d[3])
