@@ -8,6 +8,11 @@ import pytest
 import torch
 from PIL import Image
 
+from vespa.datasets.yolo.yolo_dataset import YOLODataset
+from vespa.datasets.yolo.yolo_transforms import (
+    get_yolo_test_transforms,
+    get_yolo_train_transforms,
+)
 from vespa.methods.rcnn.model import RCNN
 
 
@@ -92,7 +97,7 @@ def create_pascal_voc_annotation(  # noqa
 
 
 @pytest.fixture
-def create_dataset_path_train(qtd_images=5):
+def create_images_labels_yolo_format(qtd_images=5):
     """
     Cria um diretório temporário com subdiretórios `images` e `labels`,
     além de um arquivo `train.txt`.
@@ -111,14 +116,14 @@ def create_dataset_path_train(qtd_images=5):
         train_file_path = os.path.join(temp_dir, 'train.txt')
         with open(train_file_path, 'w') as train_file:  # noqa
             for i in range(qtd_images):
-                train_file.write(f'images/image_{i}.jpg\n')
+                train_file.write(f'./images/image_{i}.jpg\n')
 
         return temp_dir
     except Exception as e:
         raise Exception(f'Erro ao criar arquivos temporários: {e}')
 
 
-def destroy_dataset_path_train(path):
+def destroy_temp_images_path(path):
     """
     Remove o diretório temporário.
     """
@@ -126,11 +131,11 @@ def destroy_dataset_path_train(path):
 
 
 @pytest.fixture
-def create_coco_annotations(create_dataset_path_train):
+def create_coco_annotations(create_images_labels_yolo_format):
     """
     Extende a fixture base para adicionar um arquivo JSON no formato COCO.
     """
-    root_dir = create_dataset_path_train
+    root_dir = create_images_labels_yolo_format
     annotations = {
         'images': [
             {'id': i, 'file_name': f'images/image_{i}.jpg'} for i in range(5)
@@ -180,6 +185,36 @@ def create_pascal_voc_dataset():
     except Exception as e:
         shutil.rmtree(temp_dir)
         raise e
+
+
+@pytest.fixture
+def yolo_dataset_train_retina(create_images_labels_yolo_format):
+    """
+    Cria uma instância do YOLODataset usando a fixture create_yolo_dataset.
+    """
+    root_dir = create_images_labels_yolo_format
+    return YOLODataset(
+        root_dir=root_dir,
+        txt_file='train.txt',
+        image_size=100,
+        transforms=get_yolo_train_transforms(),
+        model='retinanet',
+    )
+
+
+@pytest.fixture
+def yolo_dataset_test_retina(create_images_labels_yolo_format):
+    """
+    Cria uma instância do YOLODataset usando a fixture create_yolo_dataset.
+    """
+    root_dir = create_images_labels_yolo_format
+    return YOLODataset(
+        root_dir=root_dir,
+        txt_file='train.txt',
+        image_size=100,
+        transforms=get_yolo_test_transforms(),
+        model='retinanet',
+    )
 
 
 @pytest.fixture

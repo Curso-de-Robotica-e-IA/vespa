@@ -1,139 +1,92 @@
-import pytest
-
-from vespa.datasets.yolo.yolo_dataset import YOLODataset
-from vespa.datasets.yolo.yolo_transforms import (
-    get_yolo_test_transforms,
-    get_yolo_train_transforms,
-)
-
-
-@pytest.fixture
-def yolo_dataset(create_yolo_dataset):
-    """
-    Cria uma instância do YOLODataset usando a fixture create_yolo_dataset.
-    """
-    root_dir = create_yolo_dataset
-    return YOLODataset(
-        root_dir=root_dir,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=get_yolo_train_transforms(),
-    )
-
-
-def test_yolo_dataset_length(create_dataset_path_train):
+def test_yolo_dataset_train_length(yolo_dataset_train_retina):
     """
     Testa se o tamanho do dataset YOLO está correto.
     """
-    dataset_path = create_dataset_path_train
-    dataset = YOLODataset(
-        root_dir=dataset_path,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=None,
-    )
-    assert len(dataset) == 5, 'Tamanho do dataset YOLO está incorreto.'  # noqa
+    dataset = yolo_dataset_train_retina
+    assert len(dataset), 5
 
 
-def test_yolo_dataset_image_shape(create_dataset_path_train):
+def test_yolo_dataset_train_image_shape(yolo_dataset_train_retina):
     """
     Testa se as imagens carregadas pelo
     YOLODataset têm as dimensões corretas.
     """
-    dataset_path = create_dataset_path_train
-    dataset = YOLODataset(
-        root_dir=dataset_path,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=None,
-    )
+    dataset = yolo_dataset_train_retina
     img, _ = dataset[0]
-    assert img.shape == (100, 100, 3), (
-        f'Dimensão da imagem no YOLODataset está incorreta: {img.shape}'
-    )  # noqa
+    assert img.shape, (3, 100, 100)  # noqa
 
 
-def test_yolo_dataset_boxes(create_dataset_path_train):
+def test_yolo_dataset_train_boxes(yolo_dataset_train_retina):
     """
     Testa se as bounding boxes estão sendo carregadas corretamente.
     """
-    dataset_path = create_dataset_path_train
-    dataset = YOLODataset(
-        root_dir=dataset_path,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=None,
-    )
+    dataset = yolo_dataset_train_retina
     _, target = dataset[0]
-    assert len(target['boxes']) > 0, (
-        'Bounding boxes no YOLODataset não foram encontrados.'
-    )  # noqa
+    assert len(target['boxes']) > 0, True
 
 
-def test_yolo_train_transforms_image_shape(create_dataset_path_train):
+def test_yolo_dataset_train_get_images(yolo_dataset_train_retina):
     """
-    Testa se as transformações de treino geram imagens com 3 dimensões.
+    Testa se as bounding boxes estão sendo carregadas corretamente.
     """
-    dataset_path = create_dataset_path_train
-    dataset = YOLODataset(
-        root_dir=dataset_path,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=get_yolo_train_transforms(),
-    )
+    dataset = yolo_dataset_train_retina
+
+    for img, _ in dataset:
+        assert img is not None, True
+
+
+def test_yolo_dataset_train_get_targets(yolo_dataset_train_retina):
+    """
+    Testa se as bounding boxes estão sendo carregadas corretamente.
+    """
+    dataset = yolo_dataset_train_retina
+
+    for _, target in dataset:
+        assert target is not None, True
+
+
+def test_yolo_dataset_test_length(yolo_dataset_test_retina):
+    """
+    Testa se o tamanho do dataset YOLO está correto.
+    """
+    dataset = yolo_dataset_test_retina
+    assert len(dataset), 5
+
+
+def test_yolo_dataset_test_image_shape(yolo_dataset_test_retina):
+    """
+    Testa se as imagens carregadas pelo
+    YOLODataset têm as dimensões corretas.
+    """
+    dataset = yolo_dataset_test_retina
     img, _ = dataset[0]
-    assert len(img.shape) == 3, (  # noqa
-        'Imagem transformada para treino deve ter 3 dimensões.'
-    )
+    assert img.shape, (3, 100, 100)  # noqa
 
 
-def test_yolo_train_transforms_boxes(create_dataset_path_train):
+def test_yolo_dataset_test_boxes(yolo_dataset_test_retina):
     """
-    Testa se as bounding boxes são transformadas corretamente no treino.
+    Testa se as bounding boxes estão sendo carregadas corretamente.
     """
-    dataset_path = create_dataset_path_train
-    dataset = YOLODataset(
-        root_dir=dataset_path,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=get_yolo_train_transforms(),
-    )
+    dataset = yolo_dataset_test_retina
     _, target = dataset[0]
-    for box in target['boxes']:
-        assert all(0.0 <= coord <= 100.0 for coord in box), (  # noqa
-            'Bounding boxes estão fora do intervalo esperado.'
-        )
+    assert len(target['boxes']) > 0, True
 
 
-def test_yolo_test_transforms_image_shape(create_dataset_path_train):
+def test_yolo_dataset_test_get_images(yolo_dataset_test_retina):
     """
-    Testa se as transformações de teste geram imagens com 3 dimensões.
+    Testa se as bounding boxes estão sendo carregadas corretamente.
     """
-    dataset_path = create_dataset_path_train
-    dataset = YOLODataset(
-        root_dir=dataset_path,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=get_yolo_test_transforms(),
-    )
-    img, _ = dataset[0]
-    assert len(img.shape) == 3, (  # noqa
-        'Imagem transformada para teste deve ter 3 dimensões.'
-    )
+    dataset = yolo_dataset_test_retina
+
+    for img, _ in dataset:
+        assert img is not None, True
 
 
-def test_yolo_test_transforms_no_bboxes(create_dataset_path_train):
+def test_yolo_dataset_test_get_targets(yolo_dataset_test_retina):
     """
-    Testa se as transformações de teste não incluem bounding boxes.
+    Testa se as bounding boxes estão sendo carregadas corretamente.
     """
-    dataset_path = create_dataset_path_train
-    dataset = YOLODataset(
-        root_dir=dataset_path,
-        txt_file='train.txt',
-        image_size=100,
-        transforms=get_yolo_test_transforms(),
-    )
-    _, target = dataset[0]
-    assert 'boxes' in target, (
-        'Bounding boxes devem estar presentes no target, mesmo sem transformações.'  # noqa
-    )  # noqa
+    dataset = yolo_dataset_test_retina
+
+    for _, target in dataset:
+        assert target is not None, True

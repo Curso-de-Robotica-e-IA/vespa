@@ -74,12 +74,12 @@ class YOLODataset(BaseDataset):
                    (caixas e rótulos).
         """
         img_path = self.images[idx]
-        img = cv2.imread(img_path)
-        if img is None:
+        image = cv2.imread(img_path)
+        if image is None:
             raise FileNotFoundError(f'Image not found: {img_path}')
 
-        img = cv2.resize(img, (self.image_size, self.image_size))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        image = cv2.resize(image, (self.image_size, self.image_size))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Construa o caminho do rótulo
         label_path = img_path.replace(
@@ -90,12 +90,34 @@ class YOLODataset(BaseDataset):
         if not os.path.exists(label_path):
             raise FileNotFoundError(f'Label not found: {label_path}')
 
-        if self.model == 'retinanet':
-            return self.yolo_to_retinanet(
-                idx, img, label_path, self.transforms
-            )
+        boxes = []
+        labels = []
 
-        return img
+        with open(label_path, 'r', encoding='utf-8') as f:
+            for line in f.readlines():
+                if line[0] != '\n':
+                    class_id, x_center, y_center, width, height = map(
+                        float, line.strip().split()
+                    )
+                    labels.append(int(class_id))
+                    boxes.append([x_center, y_center, width, height])
+
+        # Try apply Albumentations transforms
+        try:
+            augmented = self.transforms(
+                image=image, bboxes=boxes, labels=labels
+            )
+            image = augmented['image']
+            boxes = augmented['bboxes']
+            labels = augmented['labels']
+        except ValueError:
+            # If val transform was used, don't need apply augmentations
+            image = self.transforms(image=image)['image']
+
+        if self.model == 'retinanet':
+            return self.yolo_to_retinanet(idx, image, boxes, labels)
+
+        return image
 
     def __len__(self):
         """
