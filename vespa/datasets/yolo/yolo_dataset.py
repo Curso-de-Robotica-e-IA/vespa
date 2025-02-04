@@ -1,14 +1,20 @@
 import os
-import cv2
 
-from vespa.datasets.base_dataset import BaseDataset
+import cv2
 from tqdm import tqdm
 
-from vespa.datasets.config import MEAN_YOLO, STD_YOLO
-from vespa.datasets.yolo.yolo_transforms import get_yolo_test_transforms
+from vespa.datasets.base_dataset import BaseDataset
+
 
 class YOLODataset(BaseDataset):
-    def __init__(self, root_dir, txt_file, image_size, transforms=None, model: str=None):
+    def __init__(
+        self,
+        root_dir: str,
+        txt_file: str,
+        image_size: int,
+        transforms=None,
+        model: str = None,
+    ):
         """
         Inicializa o dataset YOLO.
 
@@ -24,39 +30,37 @@ class YOLODataset(BaseDataset):
         self.txt_file_path = os.path.join(root_dir, txt_file)
 
         # Lê o arquivo txt com as imagens e labels
-        with open(self.txt_file_path) as f:
-            self.images = f.read().strip().split("\n")
-        
-        self.verify_images()
-    
-    def verify_labels(self):
-        before_size = len(self.labels)
-        confirms = [os.path.normpath(os.path.join(self.root_dir, label))
-                    for label in tqdm(self.labels)
-                    if os.path.isfile(os.path.normpath(os.path.join(self.root_dir, label)))]
-        self.labels = confirms
-        
-        labels_len = len(self.labels)
-        if labels_len == 0:
-            raise(Exception(f'No labels found from paths in {self.txt_file_path}'))
-        
-        print(f'{labels_len} labels read from {before_size}')
+        with open(self.txt_file_path, 'r', encoding='utf-8') as f:
+            self.images = f.read().strip().split('\n')
 
-    
+        self.verify_images()
+
     def verify_images(self):
-        before_size = self.__len__()
-        confirms = [os.path.normpath(os.path.join(self.root_dir, image)) 
-        for image in tqdm(self.images) 
-        if os.path.isfile(os.path.normpath(os.path.join(self.root_dir, image)))
-        and os.path.isfile(os.path.normpath(os.path.join(self.root_dir, 
-        image.replace('/images/', '/labels/').replace('.jpg', '.txt'))))]
+        before_size = len(self.images)
+        confirms = [
+            os.path.normpath(os.path.join(self.root_dir, image))
+            for image in tqdm(self.images)
+            if os.path.isfile(
+                os.path.normpath(os.path.join(self.root_dir, image))
+            )
+            and os.path.isfile(
+                os.path.normpath(
+                    os.path.join(
+                        self.root_dir,
+                        image.replace('/images/', '/labels/').replace(
+                            '.jpg', '.txt'
+                        ),
+                    )
+                )
+            )
+        ]
 
         self.images = confirms
+        current_size = len(self.images)
+        if current_size == 0:
+            raise (Exception(f'No images found: {self.txt_file_path}'))
 
-        if self.__len__() == 0:
-            raise(Exception(f'No images found from paths in {self.txt_file_path}'))
-        
-        print(f'{self.__len__()} images read from {before_size}')
+        print(f'{current_size} images read from {before_size}')
 
     def __getitem__(self, idx):
         """
@@ -87,7 +91,9 @@ class YOLODataset(BaseDataset):
             raise FileNotFoundError(f'Label not found: {label_path}')
 
         if self.model == 'retinanet':
-            return self.yolo_to_retinanet(idx, img, label_path, self.transforms)
+            return self.yolo_to_retinanet(
+                idx, img, label_path, self.transforms
+            )
 
         return img
 
@@ -99,10 +105,3 @@ class YOLODataset(BaseDataset):
             int: Número de imagens no dataset.
         """
         return len(self.images)
-
-if __name__ == '__main__':
-    d = YOLODataset(root_dir=r'\\192.168.155.240\Robotica\CME\dataset_cme_v4\laparoscopia_06-2024\tools - v2',
-                    txt_file='train.txt', image_size=640,
-                    transforms=get_yolo_test_transforms(),
-                    model='retinanet')
-    print(d[3])
