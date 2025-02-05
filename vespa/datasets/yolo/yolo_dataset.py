@@ -4,6 +4,8 @@ import cv2
 from tqdm import tqdm
 
 from vespa.datasets.base_dataset import BaseDataset
+from vespa.datasets.utils import yolo_to_retinanet
+from albumentations import Compose
 
 
 class YOLODataset(BaseDataset):
@@ -12,18 +14,26 @@ class YOLODataset(BaseDataset):
         root_dir: str,
         txt_file: str,
         image_size: int,
-        transforms=None,
-        model: str = None,
+        transforms: Compose,
+        model: str,
     ):
         """
-        Inicializa o dataset YOLO.
-
+        Initializes the YOLO dataset.
         Args:
-            root_dir (str): Diretório raiz das imagens e rótulos.
-            txt_file (str): Nome do arquivo contendo a lista de imagens.
-            image_size (int): Tamanho para redimensionar as imagens.
-            transforms (callable, optional): Transformações a serem
-                                    aplicadas nas imagens e anotações.
+            root_dir (str): The root directory where the dataset is stored.
+            txt_file (str): The name of the text file containing image paths.
+            image_size (int): The size to which images will be resized.
+            transforms (Compose): The transformations to be applied to 
+            the images.
+            model (str): The model type being used.
+        Attributes:
+            image_size (int): The size to which images will be resized.
+            txt_file_path (str): The full path to the text file containing 
+            image paths.
+            images (list): A list of image paths and labels read from the text file.
+        Methods:
+            verify_images(): Verifies the existence and validity of the images
+            listed in the text file.
         """
         super().__init__(root_dir, transforms, model)
         self.image_size = image_size
@@ -36,6 +46,17 @@ class YOLODataset(BaseDataset):
         self.verify_images()
 
     def verify_images(self):
+        """
+        Verifies the existence of image and label files listed in the dataset.
+
+        This method checks if the image files and their corresponding label
+        files exist in the specified directories. It updates the list of
+        images to only include those that have both image and label files
+        present. If no valid images are found, it raises an exception.
+
+        Raises:
+            Exception: If no valid images are found in the dataset.
+        """
         before_size = len(self.images)
         confirms = [
             os.path.normpath(os.path.join(self.root_dir, image))
@@ -64,14 +85,13 @@ class YOLODataset(BaseDataset):
 
     def __getitem__(self, idx):
         """
-        Retorna uma amostra do dataset no formato esperado pelo PyTorch.
+        Retrieve the item at the specified index from the dataset.
 
         Args:
-            idx (int): Índice do item.
+            idx (int): The index of the item to retrieve.
 
         Returns:
-            tuple: Imagem transformada e dicionário com alvos
-                   (caixas e rótulos).
+            tuple: A tuple containing the image and its corresponding label.
         """
         img_path = self.images[idx]
         image = cv2.imread(img_path)
@@ -102,22 +122,18 @@ class YOLODataset(BaseDataset):
                     labels.append(int(class_id))
                     boxes.append([x_center, y_center, width, height])
 
-        # Try apply Albumentations transforms
-        try:
-            augmented = self.transforms(
-                image=image, bboxes=boxes, labels=labels
-            )
-            image = augmented['image']
-            boxes = augmented['bboxes']
-            labels = augmented['labels']
-        except ValueError:
-            # If val transform was used, don't need apply augmentations
-            image = self.transforms(image=image)['image']
+        # Apply Albumentations transforms
+        augmented = self.transforms(
+            image=image, bboxes=boxes, labels=labels
+        )
+        image = augmented['image']
+        boxes = augmented['bboxes']
+        labels = augmented['labels']
 
         if self.model == 'retinanet':
-            return self.yolo_to_retinanet(idx, image, boxes, labels)
+            return yolo_to_retinanet(idx, image, boxes, labels)
 
-        return image
+        raise ValueError(f'Invalid model type: {self.model}')
 
     def __len__(self):
         """

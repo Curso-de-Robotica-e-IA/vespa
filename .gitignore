@@ -9,9 +9,6 @@ __pycache__/
 /runs
 test.py
 
-# Poetry
-*.lock
-
 # Distribution / packaging
 .Python
 build/

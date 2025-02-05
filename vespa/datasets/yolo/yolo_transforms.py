@@ -52,9 +52,20 @@ def get_yolo_train_transforms():
 
 def get_yolo_test_transforms():
     """
-    Transformações de teste/validação específicas para o dataset YOLO.
+    Transformações de teste específicas para o dataset YOLO.
     """
-    return Compose([
-        Normalize(mean=MEAN_YOLO, std=STD_YOLO),
-        ToTensorV2(),
-    ])
+
+    return Compose(
+        [
+            HorizontalFlip(p=0.0),
+            RandomBrightnessContrast(p=0.0),
+            Affine(p=0.0),
+            Normalize(mean=MEAN_YOLO, std=STD_YOLO),
+            ToTensorV2(),
+        ],
+        bbox_params={
+            'format': 'yolo',
+            'label_fields': ['labels'],
+            'min_visibility': 1.0,
+        },
+    )

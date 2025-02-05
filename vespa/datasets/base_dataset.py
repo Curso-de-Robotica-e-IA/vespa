@@ -2,10 +2,8 @@ from abc import ABC, abstractmethod
 
 from torch.utils.data import Dataset
 
-from vespa.datasets.dataset_utils import DatasetUtils
 
-
-class BaseDataset(Dataset, ABC, DatasetUtils):
+class BaseDataset(Dataset, ABC):
     """
     Classe base abstrata para diferentes formatos de datasets.
     """

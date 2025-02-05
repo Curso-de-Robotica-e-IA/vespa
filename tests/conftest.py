@@ -95,32 +95,35 @@ def create_pascal_voc_annotation(  # noqa
     tree = ET.ElementTree(annotation)
     tree.write(annotation_path)
 
-
 @pytest.fixture
-def create_images_labels_yolo_format(qtd_images=5):
-    """
-    Cria um diretório temporário com subdiretórios `images` e `labels`,
-    além de um arquivo `train.txt`.
-    """
-    temp_dir = tempfile.mkdtemp()
-    try:
-        images_dir = os.path.join(temp_dir, 'images')
-        labels_dir = os.path.join(temp_dir, 'labels')
-        os.makedirs(images_dir)
-        os.makedirs(labels_dir)
+def create_images_labels_yolo_format():
+    return './assets/yolo_dataset/cars_detection'
 
-        for i in range(qtd_images):
-            create_image(images_dir, i)
-            create_label(labels_dir, i)
+# @pytest.fixture
+# def create_images_labels_yolo_format(qtd_images=5):
+#     """
+#     Cria um diretório temporário com subdiretórios `images` e `labels`,
+#     além de um arquivo `train.txt`.
+#     """
+#     temp_dir = tempfile.mkdtemp()
+#     try:
+#         images_dir = os.path.join(temp_dir, 'images')
+#         labels_dir = os.path.join(temp_dir, 'labels')
+#         os.makedirs(images_dir)
+#         os.makedirs(labels_dir)
 
-        train_file_path = os.path.join(temp_dir, 'train.txt')
-        with open(train_file_path, 'w') as train_file:  # noqa
-            for i in range(qtd_images):
-                train_file.write(f'./images/image_{i}.jpg\n')
+#         for i in range(qtd_images):
+#             create_image(images_dir, i)
+#             create_label(labels_dir, i)
 
-        return temp_dir
-    except Exception as e:
-        raise Exception(f'Erro ao criar arquivos temporários: {e}')
+#         train_file_path = os.path.join(temp_dir, 'train.txt')
+#         with open(train_file_path, 'w') as train_file:  # noqa
+#             for i in range(qtd_images):
+#                 train_file.write(f'./images/image_{i}.jpg\n')
+
+#         return temp_dir
+#     except Exception as e:
+#         raise Exception(f'Erro ao criar arquivos temporários: {e}')
 
 
 def destroy_temp_images_path(path):
@@ -196,7 +199,7 @@ def yolo_dataset_train_retina(create_images_labels_yolo_format):
     return YOLODataset(
         root_dir=root_dir,
         txt_file='train.txt',
-        image_size=100,
+        image_size=416,
         transforms=get_yolo_train_transforms(),
         model='retinanet',
     )
@@ -211,7 +214,7 @@ def yolo_dataset_test_retina(create_images_labels_yolo_format):
     return YOLODataset(
         root_dir=root_dir,
         txt_file='train.txt',
-        image_size=100,
+        image_size=416,
         transforms=get_yolo_test_transforms(),
         model='retinanet',
     )
