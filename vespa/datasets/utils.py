@@ -1,4 +1,4 @@
-from torch import Tensor, tensor, empty, float32, int64
+from torch import Tensor, empty, float32, int64, tensor
 
 
 def yolo_to_retinanet(idx: int, image: Tensor, boxes: list, labels: list):
@@ -7,14 +7,14 @@ def yolo_to_retinanet(idx: int, image: Tensor, boxes: list, labels: list):
     Args:
         idx (int): The index of the image.
         image (Tensor): The image tensor with shape (C, H, W).
-        boxes (list): A list of bounding boxes in YOLO format, 
-                      where each box is represented as 
+        boxes (list): A list of bounding boxes in YOLO format,
+                      where each box is represented as
                       [x_center, y_center, width, height].
         labels (list): A list of labels corresponding to the bounding boxes.
     Returns:
-        Tuple[Tensor, dict]: A tuple containing the image tensor and a 
+        Tuple[Tensor, dict]: A tuple containing the image tensor and a
         dictionary with the following keys:\n
-            - 'boxes' (Tensor): Converted bounding boxes in RetinaNet 
+            - 'boxes' (Tensor): Converted bounding boxes in RetinaNet
             format [xmin, ymin, xmax, ymax].\n
             - 'labels' (Tensor): Tensor of labels.\n
             - 'image_id' (Tensor): Tensor containing the image index.\n
@@ -30,9 +30,7 @@ def yolo_to_retinanet(idx: int, image: Tensor, boxes: list, labels: list):
         converted_boxes.append([xmin, ymin, xmax, ymax])
 
     if len(converted_boxes) > 0:
-        converted_boxes = tensor(
-            converted_boxes, dtype=float32
-        )
+        converted_boxes = tensor(converted_boxes, dtype=float32)
         labels = tensor(labels, dtype=int64)
     else:
         converted_boxes = empty((0, 4), dtype=float32)

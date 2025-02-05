@@ -1,3 +1,5 @@
+# TODO: Add setup and teardown for the fixtures
+
 import json
 import os
 import shutil
@@ -95,35 +97,10 @@ def create_pascal_voc_annotation(  # noqa
     tree = ET.ElementTree(annotation)
     tree.write(annotation_path)
 
+
 @pytest.fixture
 def create_images_labels_yolo_format():
     return './assets/yolo_dataset/cars_detection'
-
-# @pytest.fixture
-# def create_images_labels_yolo_format(qtd_images=5):
-#     """
-#     Cria um diretório temporário com subdiretórios `images` e `labels`,
-#     além de um arquivo `train.txt`.
-#     """
-#     temp_dir = tempfile.mkdtemp()
-#     try:
-#         images_dir = os.path.join(temp_dir, 'images')
-#         labels_dir = os.path.join(temp_dir, 'labels')
-#         os.makedirs(images_dir)
-#         os.makedirs(labels_dir)
-
-#         for i in range(qtd_images):
-#             create_image(images_dir, i)
-#             create_label(labels_dir, i)
-
-#         train_file_path = os.path.join(temp_dir, 'train.txt')
-#         with open(train_file_path, 'w') as train_file:  # noqa
-#             for i in range(qtd_images):
-#                 train_file.write(f'./images/image_{i}.jpg\n')
-
-#         return temp_dir
-#     except Exception as e:
-#         raise Exception(f'Erro ao criar arquivos temporários: {e}')
 
 
 def destroy_temp_images_path(path):

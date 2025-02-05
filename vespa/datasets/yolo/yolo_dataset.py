@@ -1,11 +1,11 @@
 import os
 
 import cv2
+from albumentations import Compose
 from tqdm import tqdm
 
 from vespa.datasets.base_dataset import BaseDataset
 from vespa.datasets.utils import yolo_to_retinanet
-from albumentations import Compose
 
 
 class YOLODataset(BaseDataset):
@@ -23,14 +23,15 @@ class YOLODataset(BaseDataset):
             root_dir (str): The root directory where the dataset is stored.
             txt_file (str): The name of the text file containing image paths.
             image_size (int): The size to which images will be resized.
-            transforms (Compose): The transformations to be applied to 
+            transforms (Compose): The transformations to be applied to
             the images.
             model (str): The model type being used.
         Attributes:
             image_size (int): The size to which images will be resized.
-            txt_file_path (str): The full path to the text file containing 
+            txt_file_path (str): The full path to the text file containing
             image paths.
-            images (list): A list of image paths and labels read from the text file.
+            images (list): A list of image paths and labels read from the text
+            file.
         Methods:
             verify_images(): Verifies the existence and validity of the images
             listed in the text file.
@@ -123,9 +124,7 @@ class YOLODataset(BaseDataset):
                     boxes.append([x_center, y_center, width, height])
 
         # Apply Albumentations transforms
-        augmented = self.transforms(
-            image=image, bboxes=boxes, labels=labels
-        )
+        augmented = self.transforms(image=image, bboxes=boxes, labels=labels)
         image = augmented['image']
         boxes = augmented['bboxes']
         labels = augmented['labels']
