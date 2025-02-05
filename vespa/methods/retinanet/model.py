@@ -1,6 +1,10 @@
-from torchvision.models.detection import RetinaNet_ResNet50_FPN_V2_Weights, retinanet_resnet50_fpn_v2
-from torchvision.models.resnet import ResNet50_Weights
 from torch.nn import Module
+from torchvision.models.detection import (
+    RetinaNet_ResNet50_FPN_V2_Weights,
+    retinanet_resnet50_fpn_v2,
+)
+from torchvision.models.resnet import ResNet50_Weights
+
 
 class RetinaNet(Module):
     def __init__(self, num_class=9, pre_trained=True, *args, **kwargs):
@@ -11,14 +15,14 @@ class RetinaNet(Module):
         else:
             weights = None
             weights_backbone = None
-        
+
         self.model = retinanet_resnet50_fpn_v2(
             weights=weights,
             weights_backbone=weights_backbone,
             num_class=num_class,
             args=args,
-            kwargs=kwargs
+            kwargs=kwargs,
         )
-    
+
     def forward(self, x):
         return self.model(x)
