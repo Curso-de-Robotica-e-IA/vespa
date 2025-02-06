@@ -6,7 +6,6 @@ authors = [
     "jefferson-norberto2 <jmn@cin.ufpe.br>",
     "matheus <mhjc@cin.ufpe.br>",
 ]
-readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
