@@ -33,7 +33,9 @@ def yolo_to_retinanet(idx: int, image: Tensor, boxes: list, labels: list):
 
         # Garante que as coordenadas estejam corretas
         if xmin >= xmax or ymin >= ymax:
-            print(f"⚠️ Bounding box inválida removida: {[xmin, ymin, xmax, ymax]}")
+            print(
+                f'⚠️ Bounding box inválida removida: {[xmin, ymin, xmax, ymax]}'
+            )
             continue  # Ignora caixas inválidas
 
         converted_boxes.append([xmin, ymin, xmax, ymax])
@@ -41,7 +43,8 @@ def yolo_to_retinanet(idx: int, image: Tensor, boxes: list, labels: list):
     if len(converted_boxes) > 0:
         converted_boxes = tensor(converted_boxes, dtype=float32)
         labels = tensor(labels, dtype=int64)
-        area = (converted_boxes[:, 2] - converted_boxes[:, 0]) * (converted_boxes[:, 3] - converted_boxes[:, 1])
+        area = converted_boxes[:, 2] - converted_boxes[:, 0]
+        area *= converted_boxes[:, 3] - converted_boxes[:, 1]
     else:
         converted_boxes = empty((0, 4), dtype=float32)
         labels = empty((0,), dtype=int64)
