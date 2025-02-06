@@ -8,9 +8,10 @@ class BaseDataset(Dataset, ABC):
     Classe base abstrata para diferentes formatos de datasets.
     """
 
-    def __init__(self, root_dir, transforms=None):
+    def __init__(self, root_dir, transforms=None, model=None):
         self.root_dir = root_dir
         self.transforms = transforms
+        self.model = model
 
     @abstractmethod
     def __getitem__(self, idx):

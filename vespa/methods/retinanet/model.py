@@ -8,6 +8,8 @@ from torchvision.models.detection import (
 )
 
 from vespa.datasets.base_dataset import BaseDataset
+from vespa.datasets.yolo.yolo_dataset import YOLODataset
+from vespa.datasets.yolo.yolo_transforms import get_yolo_train_transforms
 from vespa.methods.base_model import BaseModel
 from vespa.methods.utils import configure_optimizer, custom_collate_fn
 
@@ -32,6 +34,8 @@ class RetinaNet(BaseModel):
             weights_backbone = kwargs['weights_backbone']
         else:
             weights_backbone = None
+        
+        self.name = 'retinanet'
 
         self.model = retinanet_resnet50_fpn_v2(
             weights=weights,
@@ -66,7 +70,13 @@ class RetinaNet(BaseModel):
         return self.model(images, targets)
 
     def fit(
-        self, train_dataset: BaseDataset, batch_size: int, epochs=20, device=0
+        self, 
+        train_dataset: BaseDataset, 
+        batch_size: int, 
+        epochs=20, 
+        device=0, 
+        save_model_epochs = 0,
+        path_model_save = './model.pth'
     ) -> None:
         """
         Train the model using the provided training dataset.
@@ -128,6 +138,11 @@ class RetinaNet(BaseModel):
 
             # Calc and print avarage loss from epoch
             print(f'Average Loss: {epoch_loss / len(train_loader)}')
+
+            # Save model if necessary
+            if save_model_epochs != 0:
+                if epoch % save_model_epochs == 0: 
+                    self.save(path_model_save)
 
     @no_grad()
     def valid(self, val_dataset, batch_size, device) -> float:
@@ -229,3 +244,8 @@ class RetinaNet(BaseModel):
 
     def print_model_summary(self):
         print(self.model)
+
+if __name__ == '__main__':
+    model = RetinaNet(num_classes=5)
+    dataset = YOLODataset('./assets/yolo_dataset/cars_detection', 'train.txt', 416, get_yolo_train_transforms(), model.name)
+    model.fit(dataset, 4, 5, 0)

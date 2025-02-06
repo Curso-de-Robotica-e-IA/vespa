@@ -8,7 +8,7 @@ from vespa.datasets.base_dataset import BaseDataset
 
 
 class PascalVOCDataset(BaseDataset):
-    def __init__(self, root_dir, transforms=None):
+    def __init__(self, root_dir, transforms=None, model_name: str = None):
         """
         Inicializa o dataset Pascal VOC.
 
@@ -21,6 +21,7 @@ class PascalVOCDataset(BaseDataset):
         self.image_paths = []
         self.annotation_paths = []
         self.class_to_idx = {}
+        self.model_name = model_name
 
         for file in os.listdir(os.path.join(root_dir, 'Annotations')):
             if file.endswith('.xml'):

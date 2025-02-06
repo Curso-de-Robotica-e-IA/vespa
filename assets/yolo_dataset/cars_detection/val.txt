@@ -1,0 +1,5 @@
+./valid/images/image_120.jpg
+./valid/images/image_121.jpg
+./valid/images/image_122.jpg
+./valid/images/image_123.jpg
+./valid/images/image_124.jpg
