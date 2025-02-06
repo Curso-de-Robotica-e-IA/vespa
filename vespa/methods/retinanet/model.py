@@ -248,4 +248,4 @@ class RetinaNet(BaseModel):
 if __name__ == '__main__':
     model = RetinaNet(num_classes=5)
     dataset = YOLODataset('./assets/yolo_dataset/cars_detection', 'train.txt', 416, get_yolo_train_transforms(), model.name)
-    model.fit(dataset, 4, 5, 0)
+    model.fit(dataset, 1, 5, 'cpu')
