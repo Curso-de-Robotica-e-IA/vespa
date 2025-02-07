@@ -15,7 +15,7 @@ class YOLODataset(BaseDataset):
         txt_file: str,
         image_size: int,
         transforms: Compose,
-        model: str,
+        model_name: str,
     ):
         """
         Initializes the YOLO dataset.
@@ -36,7 +36,7 @@ class YOLODataset(BaseDataset):
             verify_images(): Verifies the existence and validity of the images
             listed in the text file.
         """
-        super().__init__(root_dir, transforms, model)
+        super().__init__(root_dir, transforms, model_name)
         self.image_size = image_size
         self.txt_file_path = os.path.join(root_dir, txt_file)
 

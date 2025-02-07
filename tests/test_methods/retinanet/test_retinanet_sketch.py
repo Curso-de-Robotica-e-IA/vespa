@@ -48,3 +48,21 @@ def test_model_labels(retina_sketch_fixture, tensor_image_fixture):
 
     for result in results:
         assert isinstance(result['labels'], Tensor)
+
+
+def test_model_train_loop_gpu(
+    retina_pretrained_fixture, yolo_dataset_train_retina
+):
+    model = retina_pretrained_fixture
+    dataset = yolo_dataset_train_retina
+
+    model.fit(dataset, 4, 4, 0)
+
+
+def test_model_train_loop_cpu(
+    retina_pretrained_fixture, yolo_dataset_train_retina
+):
+    model = retina_pretrained_fixture
+    dataset = yolo_dataset_train_retina
+
+    model.fit(dataset, 1, 1, 'cpu')

@@ -2,8 +2,10 @@
 name = "vespa"
 version = "0.1.0"
 description = ""
-authors = ["jefferson-norberto2 <jmn@cin.ufpe.br>", "matheus <mhjc@cin.ufpe.br>"]
-readme = "README.md"
+authors = [
+    "jefferson-norberto2 <jmn@cin.ufpe.br>",
+    "matheus <mhjc@cin.ufpe.br>",
+]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -18,21 +20,21 @@ numpy = "1.26.4"
 ruff = "^0.9.0"
 pytest = "^8.3.4"
 taskipy = "^1.14.1"
+lark = "^1.2.2"
 
 # Torch 2.2.2 with CUDA 12.1 or higher
 torch = [
-    {url = "https://download.pytorch.org/whl/cu121/torch-2.2.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
-    {url = "https://download.pytorch.org/whl/cu121/torch-2.2.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
+    { url = "https://download.pytorch.org/whl/cu121/torch-2.2.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32" },
+    { url = "https://download.pytorch.org/whl/cu121/torch-2.2.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux" },
 ]
 torchaudio = [
-    {url = "https://download.pytorch.org/whl/cu121/torchaudio-2.2.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
-    {url = "https://download.pytorch.org/whl/cu121/torchaudio-2.2.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
+    { url = "https://download.pytorch.org/whl/cu121/torchaudio-2.2.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32" },
+    { url = "https://download.pytorch.org/whl/cu121/torchaudio-2.2.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux" },
 ]
 torchvision = [
-    {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32"},
-    {url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux"}
+    { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32" },
+    { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux" },
 ]
-lark = "^1.2.2"
 
 [tool.ruff]
 line-length = 79
@@ -50,7 +52,7 @@ docstring-code-line-length = 20
 
 [tool.taskipy.tasks]
 lint = 'ruff check . && ruff check . --diff'
-format = 'ruff check . --fix && ruff format' 
+format = 'ruff check . --fix && ruff format'
 
 [build-system]
 requires = ["poetry-core"]

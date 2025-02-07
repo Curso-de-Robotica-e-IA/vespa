@@ -21,26 +21,33 @@ def yolo_to_retinanet(idx: int, image: Tensor, boxes: list, labels: list):
             - 'area' (Tensor): Tensor containing the area of each bounding box.
     """
     converted_boxes = []
+    img_h, img_w = image.shape[1], image.shape[2]  # Altura e largura corretas
+
     for box in boxes:
         x_center, y_center, width, height = box
-        xmin = int((x_center - width // 2) * image.shape[1])
-        ymin = int((y_center - height // 2) * image.shape[2])
-        xmax = int((x_center + width // 2) * image.shape[1])
-        ymax = int((y_center + height // 2) * image.shape[2])
+
+        xmin = int((x_center - width / 2) * img_w)
+        ymin = int((y_center - height / 2) * img_h)
+        xmax = int((x_center + width / 2) * img_w)
+        ymax = int((y_center + height / 2) * img_h)
+
+        # Garante que as coordenadas estejam corretas
+        if xmin >= xmax or ymin >= ymax:
+            print(
+                f'⚠️ Bounding box inválida removida: {[xmin, ymin, xmax, ymax]}'
+            )
+            continue  # Ignora caixas inválidas
+
         converted_boxes.append([xmin, ymin, xmax, ymax])
 
     if len(converted_boxes) > 0:
         converted_boxes = tensor(converted_boxes, dtype=float32)
         labels = tensor(labels, dtype=int64)
+        area = converted_boxes[:, 2] - converted_boxes[:, 0]
+        area *= converted_boxes[:, 3] - converted_boxes[:, 1]
     else:
         converted_boxes = empty((0, 4), dtype=float32)
         labels = empty((0,), dtype=int64)
-
-    if converted_boxes.size(0) > 0:
-        area = (converted_boxes[:, 2] - converted_boxes[:, 0]) * (
-            converted_boxes[:, 3] - converted_boxes[:, 1]
-        )
-    else:
         area = tensor([], dtype=float32)
 
     target = {

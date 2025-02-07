@@ -13,7 +13,7 @@ class BaseModel(ABC, Module):
         pass
 
     @abstractmethod
-    def train(self, train_dataset, batch_size: int, epochs: int, device: str):
+    def fit(self, train_dataset, batch_size: int, epochs: int, device: str):
         """Train the model on the provided dataset."""
         pass
 
