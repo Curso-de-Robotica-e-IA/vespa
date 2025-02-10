@@ -10,7 +10,7 @@ from vespa.datasets.detection.yolo.yolo_transforms import (
 
 @pytest.fixture
 def root_path_dataset_yolo_format():
-    return './assets/yolo_dataset/cars_detection'
+    return './assets/datasets/detection/yolo'
 
 
 @pytest.fixture
