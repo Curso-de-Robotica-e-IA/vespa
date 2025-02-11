@@ -1,6 +1,6 @@
 import pytest
 
-from vespa.methods.retinanet.model import RetinaNet
+from vespa.methods.detection.retinanet.model import RetinaNet
 
 
 @pytest.fixture
