@@ -1,11 +1,11 @@
 from typing import Dict, List, Optional
 
-import torch
 from sklearn.metrics import precision_recall_fscore_support
+from torch import Tensor, load, no_grad, save
 from torch.utils.data import DataLoader
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
+from vespa.datasets.base_dataset import BaseDataset
 from vespa.methods.base_model import BaseModel
 from vespa.methods.utils import configure_optimizer, custom_collate_fn
 
@@ -18,23 +18,37 @@ class RCNN(BaseModel):
         optimizer_name: str = 'adam',
         lr: float = 0.0001,
         weight_decay: float = 0.0001,
+        *args,
+        **kwargs,
     ):
-        super().__init__()
-        self.model = fasterrcnn_resnet50_fpn_v2(weights=weights)
-        in_features = self.model.roi_heads.box_predictor.cls_score.in_features
-        self.model.roi_heads.box_predictor = FastRCNNPredictor(
-            in_features, num_classes
+        super().__init__(*args, **kwargs)
+
+        # Define os pesos corretamente
+        if num_classes != 91:
+            weights = None
+
+        # Verifica se há pesos para o backbone nos argumentos
+        weights_backbone = kwargs.get("weights_backbone", None)
+
+        self.name = 'rcnn'
+
+        self.model = fasterrcnn_resnet50_fpn_v2(
+            weights=weights,
+            weights_backbone=weights_backbone,
+            num_classes=num_classes,
+            args=args,
+            kwargs=kwargs,
         )
+
         self.optimizer = configure_optimizer(
             self.model, optimizer_name, lr, weight_decay
         )
-        self.num_classes = num_classes
 
     def forward(
         self,
-        images: List[torch.Tensor],
-        targets: Optional[List[Dict[str, torch.Tensor]]] = None,
-    ):
+        images: List[Tensor],
+        targets: Optional[List[Dict[str, Tensor]]] = None,
+    ) -> Dict[str, Tensor]:
         """
         Forward pass for the RCNN model.
 
@@ -52,109 +66,101 @@ class RCNN(BaseModel):
 
     def fit(
         self,
-        train_dataset,
-        batch_size=0,
-        epochs=10,
-        device: str = 'cuda',
-        grad_clip: Optional[float] = None,
-    ):
+        train_dataset: BaseDataset,
+        batch_size: int,
+        epochs=20,
+        device=0,
+    ) -> None:
         """
-        Train the RCNN model.
-
+        Train the model using the provided training dataset.
         Args:
-            train_dataset: Training dataset.
-            val_dataset: Validation dataset (optional).
-            batch_size (int): Batch size. Defaults to 4.
-            epochs (int): Number of epochs. Defaults to 10.
-            device (str): Device to train on ("cuda" or "cpu").
-                            Defaults to "cuda".
-            grad_clip (float, optional): Max gradient norm for
-                            gradient clipping. Defaults to None.
+            train_dataset (Dataset): The dataset to use for training.
+            batch_size (int): The number of samples per batch to load.
+            epochs (int, optional): The number of epochs to train the model.
+            Default is 20.
+            device (int or str, optional): The device to use for training (e.g.
+            'cpu' or 'cuda:0'). Default is 0.
+        Returns:
+            None
         """
+
+        # Load model on gpu
         self.model.to(device)
 
+        # Create DataLoaders
         train_loader = DataLoader(
             train_dataset,
             batch_size=batch_size,
-            shuffle=True,
-            collate_fn=custom_collate_fn,
-            num_workers=4,
-            pin_memory=True,
+            collate_fn=lambda x: tuple(zip(*x)),
         )
 
+        # Train loop
         for epoch in range(epochs):
             self.model.train()
+            # Accumulate loss values for epochs
             epoch_loss = 0.0
 
-            for images, targets in train_loader:
-                images = [img.to(device) for img in images]  # noqa
-                targets = [  # noqa
+            # Train dataloader loop
+            for batch_idx, (images, targets) in enumerate(train_loader):
+                # Create lists and pass images and ground truth to device
+                images_list = list(image.to(device) for image in images)
+                targets_list = [
                     {k: v.to(device) for k, v in t.items()} for t in targets
-                ]  # noqa
+                ]
 
-                loss_dict = self.model(images, targets)
+                # Calc loss train
+                loss_dict = self.model(images_list, targets_list)
                 losses = sum(loss for loss in loss_dict.values())
 
+                # Backpropagation
                 self.optimizer.zero_grad()
                 losses.backward()
-
-                if grad_clip:
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(), grad_clip
-                    )
-
                 self.optimizer.step()
 
+                # Sum loss to accumulate
                 epoch_loss += losses.item()
 
-            avg_loss = epoch_loss / len(train_loader)
-            print(
-                f'Epoch [{epoch + 1}/{epochs}] - Average Loss: {avg_loss:.4f}'
-            )
+                # Show loss batch informations
+                # Keep the batch train prints on same bash line
+                print('\033[2K\r', end='', flush=True)
+                print(
+                    f'Epoch [{epoch + 1}/{epochs}], Batch [{batch_idx + 1}/{len(train_loader)}] Loss: {losses.item()}\033[0m',  # noqa
+                    end=' ',
+                    flush=True,
+                )
 
-    def valid(self, val_dataset, batch_size: int, device: str):
-        """
-        Validate the model and compute average loss on the validation set.
+            # Calc and print average loss from epoch
+            print(f'Average Loss: {epoch_loss / len(train_loader)}')
 
-        Args:
-            val_dataset: Validation dataset.
-            batch_size (int): Batch size. Defaults to 4.
-            device (str): Device to evaluate on ('cuda' or 'cpu').
-                          Defaults to 'cuda'.
-
-        Returns:
-            float: Average validation loss.
-        """
+    @no_grad()
+    def valid(self, val_dataset, batch_size, device) -> float:
         self.model.eval()
         self.model.to(device)
 
         val_loader = DataLoader(
             val_dataset,
             batch_size=batch_size,
-            shuffle=False,
-            collate_fn=custom_collate_fn,
-            num_workers=4,
-            pin_memory=True,
+            collate_fn=lambda x: tuple(zip(*x)),
         )
 
         val_loss = 0.0
-        with torch.no_grad():
-            for images, targets in val_loader:
-                images = [img.to(device) for img in images]  # noqa
-                targets = [  # noqa
-                    {k: v.to(device) for k, v in t.items()}
-                    for t in targets  # noqa
-                ]
+        for images, targets in val_loader:
+            image_list = [img.to(device) for img in images]
+            target_list = [
+                {k: v.to(device) for k, v in t.items()} for t in targets
+            ]
 
-                loss_dict = self.model(images, targets)
-                losses = sum(loss for loss in loss_dict.values())
-                val_loss += losses.item()
+            loss_dict = self.model(image_list, target_list)
+            losses = sum(loss for loss in loss_dict.values())
 
-        avg_val_loss = val_loss / len(val_loader)
-        print(f'Validation Loss: {avg_val_loss:.4f}')
-        return avg_val_loss
+            val_loss += losses.item()
 
-    def test(self, test_dataset, batch_size: int, device: str):
+        return val_loss / len(val_loader)
+
+    @no_grad()
+    def test(
+        self, test_dataset, batch_size: int, device: str
+    ) -> Dict[str, float]:
         """
         Test the RCNN model and compute evaluation metrics.
 
@@ -162,7 +168,6 @@ class RCNN(BaseModel):
             test_dataset: Test dataset.
             batch_size (int): Batch size. Defaults to 4.
             device (str): Device to test on ('cuda' or 'cpu').
-                          Defaults to 'cuda'.
 
         Returns:
             Dict[str, float]: Dictionary containing evaluation metrics.
@@ -184,7 +189,7 @@ class RCNN(BaseModel):
         all_labels = []
 
         for images, targets in test_loader:
-            images = [img.to(device) for img in images]  # noqa
+            images = [img.to(device) for img in images]
             outputs = self.model(images)
 
             for output, target in zip(outputs, targets):
@@ -206,73 +211,23 @@ class RCNN(BaseModel):
         print(f'Test Metrics: {metrics}')
         return metrics
 
-    @torch.no_grad()
+    @no_grad()
     def predict(
-        self, images: List[torch.Tensor], device: str = 'cuda'
-    ) -> List[Dict[str, torch.Tensor]]:
-        """
-        Performs inferences on the model given an unlabeled dataset.
-
-        Args:
-
-            images (List[torch.Tensor]): List of image tensors.
-            device (str): Device for inference ('cuda' or 'cpu').
-
-        Returns:
-
-            List[Dict[str, torch.Tensor]]: List of predictions for each image.
-        """
-        self.model.eval()
+        self, images: List[Tensor], device: str = 'cuda'
+    ) -> List[Dict[str, Tensor]]:
+        images = [image.to(device) for image in images]
         self.model.to(device)
 
-        images = [img.to(device) for img in images]
-        outputs = self.model(images)
-
-        return outputs
+        self.model.eval()
+        return self.model(images)
 
     def save(self, path: str):
-        torch.save(
-            {
-                'model_state_dict': self.model.state_dict(),
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            },
-            path,
-        )
+        save(self.model.state_dict(), path)
 
     def load(self, path: str):
-        checkpoint = torch.load(path)
+        checkpoint = load(path)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     def print_model_summary(self):
         print(self.model)
-
-    def count_trainable_parameters(self) -> int:
-        return sum(
-            p.numel() for p in self.model.parameters() if p.requires_grad
-        )  # noqa
-
-    def freeze_backbone(self):
-        """
-        Freeze the backbone of the model to prevent updates during training.
-        """
-        for param in self.model.backbone.parameters():
-            param.requires_grad = False
-
-    def unfreeze_backbone(self):
-        """
-        Unfreeze the backbone of the model to allow updates during training.
-        """
-        for param in self.model.backbone.parameters():
-            param.requires_grad = True
-
-    def adjust_learning_rate(self, new_lr: float):
-        """
-        Adjust the learning rate of the optimizer.
-
-        Args:
-            new_lr (float): New learning rate value.
-        """
-        for param_group in self.optimizer.param_groups:
-            param_group['lr'] = new_lr
-        print(f'Learning rate adjusted to {new_lr:.6f}')
