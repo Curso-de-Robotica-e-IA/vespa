@@ -29,6 +29,7 @@ nav:
       - COCO: datasets/detection/coco.md
       - PASCAL_VOC: datasets/detection/pascal_voc.md
   - Methods:
+      - Overview: methods/detection/index.md
       - YOLO: methods/detection/yolo.md
       - RCNN: methods/detection/rcnn.md
       - Retinanet: methods/detection/retinanet.md
