@@ -35,6 +35,10 @@ torchvision = [
     { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32" },
     { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux" },
 ]
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.6.4"
+pymdown-extensions = "^10.14.3"
+mkdocstrings = "^0.28.0"
 
 [tool.ruff]
 line-length = 79
