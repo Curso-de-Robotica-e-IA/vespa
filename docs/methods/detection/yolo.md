@@ -13,4 +13,4 @@ result = vespa.train("path/to/dataset")
 print(result)
 ```
 
-For more details, check the official [documentation](../index.md).
+For more details, check the official [documentation](index.md).

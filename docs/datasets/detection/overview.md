@@ -8,6 +8,6 @@ This section provides an overview of the datasets supported by Vespa for trainin
 - **Pascal VOC Format** - A widely-used dataset for object detection.
 
 Each dataset format has specific annotations and structure. See the individual dataset pages for more details:
-- [YOLO Format](datasets/yolo.md)
-- [COCO Format](datasets/coco.md)
-- [Pascal VOC Format](datasets/pascal_voc.md)
+- [YOLO Format](yolo.md)
+- [COCO Format](coco.md)
+- [Pascal VOC Format](pascal_voc.md)
