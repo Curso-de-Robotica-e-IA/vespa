@@ -4,10 +4,6 @@ from typing import Tuple
 
 from vespa.methods.iqa.arniqa.model.resnet import ResNet
 
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-
 
 class ARNIQAPredictor(nn.Module):
     """

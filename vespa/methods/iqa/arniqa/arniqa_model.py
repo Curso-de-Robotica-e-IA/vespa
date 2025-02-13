@@ -35,6 +35,7 @@ VAL_DATASETS = ['live']
 synthetic_datasets = ["live", "csiq", "tid2013", "kadid10k"]
 authentic_datasets = ["flive", "spaq", "koniq10k"]
 
+
 class ARNIQAModel(IQABaseModel):
     """
     ARNIQA model for No-Reference Image Quality Assessment (NR-IQA). It is composed of a ResNet-50 encoder and a Ridge
@@ -43,7 +44,7 @@ class ARNIQAModel(IQABaseModel):
     predicted quality scores are in the range [0, 1], where higher is better. In addition to the score, the forward
     function allows returning the concatenated embeddings of the image at full-scale and half-scale.
     """
-    def __init__(self):
+    def __init__(self, checkpoint_path: str):
         super(ARNIQAModel, self).__init__()
 
         # Set seed
@@ -74,7 +75,7 @@ class ARNIQAModel(IQABaseModel):
                                                                                  verbose=False)
         self.scaler = torch.cuda.amp.GradScaler()
 
-        self.checkpoint_path = Path(r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa")
+        self.checkpoint_path = Path(checkpoint_path)
         self.train_dataloader = None
         self.weights_path = None
 
@@ -88,8 +89,7 @@ class ARNIQAModel(IQABaseModel):
                                       pin_memory=True, drop_last=True)
         self.train_dataloader = train_dataloader
 
-    def load(self, model_path: str=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\pretrained\ARNIQA.pth",
-             regressor_path: str=r"\\192.168.155.240\Robotica\Vespa\weights\iqa\arniqa\pretrained\regressor_koniq10k.pth"):
+    def load(self, model_path: str, regressor_path: str):
         self.arniqa_predictor = ARNIQAPredictor(model_path, regressor_path)
         self.arniqa_predictor.eval().to(self.device)
         self.weights_path = model_path
