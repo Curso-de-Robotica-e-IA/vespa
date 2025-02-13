@@ -18,21 +18,22 @@ nav:
       - API Integration: usage/api-integration.md
   - API:
       - Overview: api/index.md
-      - Authentication: api/authentication.md
-      - Training: api/training.md
-      - Prediction: api/prediction.md
-      - Models: api/models.md
+      - Endpoints: api/endpoints.md
+      - Request: api/request.md
+      - Response: api/response.md
+      - Errors: api/errors.md
+      - Examples: api/examples.md
   - Datasets:
-      - Overview: datasets/overview.md
-      - Dataset 1: datasets/dataset1.md
-      - Dataset 2: datasets/dataset2.md
+      - Overview: datasets/detection/overview.md
+      - YOLO: datasets/detection/yolo.md
+      - COCO: datasets/detection/coco.md
+      - PASCAL_VOC: datasets/detection/pascal_voc.md
   - Methods:
-      - Classification: methods/classification.md
-      - Regression: methods/regression.md
-      - Object Detection: methods/object-detection.md
+      - YOLO: methods/detection/yolo.md
+      - RCNN: methods/detection/rcnn.md
+      - Retinanet: methods/detection/retinanet.md
   - Development:
       - Code Structure: development/structure.md
-      - Testing: development/testing.md
       - Contributing: development/contributing.md
       - Deployment: development/deployment.md
   - FAQ: faq.md
