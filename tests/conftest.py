@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from vespa.datasets.detection.yolo.yolo_dataset import YOLODataset
-from vespa.datasets.detection.yolo.yolo_transforms import (
+from vespa.datasets.detection_formats.yolo.yolo_dataset import YOLODataset
+from vespa.datasets.detection_formats.yolo.yolo_transforms import (
     get_yolo_test_transforms,
     get_yolo_train_transforms,
 )
