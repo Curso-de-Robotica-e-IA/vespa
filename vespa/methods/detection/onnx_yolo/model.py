@@ -1,17 +1,15 @@
 import onnxruntime as ort
-import numpy as np
-import cv2
-from typing import Dict, List, Optional, Tuple
-from torch import Tensor, no_grad, load, save
+from typing import Dict, List, Optional
+from torch import Tensor, no_grad
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_recall_fscore_support
 
 from vespa.datasets.base_dataset import BaseDataset
 from vespa.methods.base_model import BaseModel
-from vespa.methods.utils import configure_optimizer, custom_collate_fn
+from vespa.methods.utils import custom_collate_fn
 
 
-class YOLO(BaseModel):
+class ONNX_YOLO(BaseModel):
     def __init__(
         self,
         model_path: str,
@@ -61,7 +59,7 @@ class YOLO(BaseModel):
         Returns:
             List[Dict[str, Tensor]]: List of detections per image.
         """
-        return [self.detect(image.numpy()) for image in images]
+        return [self.predict(image.numpy()) for image in images]
 
     def fit(self, train_dataset: BaseDataset, batch_size: int, epochs: int = 20, device: str = "cuda") -> None:
         """
