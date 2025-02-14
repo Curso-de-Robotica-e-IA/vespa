@@ -131,10 +131,12 @@ class YOLODataset(BaseDataset):
 
         if self.model == 'retinanet':
             return yolo_to_retinanet(idx, image, boxes, labels)
-        if self.model == 'rcnn':
+        elif self.model == 'rcnn':
             return yolo_to_rcnn(idx, image, boxes, labels)
-
-        raise ValueError(f'Invalid model type: {self.model}')
+        elif self.model == 'yolo':
+            return image, boxes, labels
+        else:
+            raise ValueError(f"Unsupported model type: {self.model}")
 
     def __len__(self):
         """

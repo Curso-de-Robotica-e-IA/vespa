@@ -117,3 +117,29 @@ def yolo_to_rcnn(idx: int, image: Tensor, boxes: list, labels: list):
     }
 
     return image, target
+
+def pascal_voc_to_yolo(image, boxes, labels, image_size):
+    """
+    Convert Pascal VOC annotations to YOLO format.
+
+    Args:
+        image (Tensor): The image tensor.
+        boxes (list): List of bounding boxes [xmin, ymin, xmax, ymax].
+        labels (list): List of class labels.
+        image_size (tuple): (height, width) of the image.
+
+    Returns:
+        Tuple: (image, yolo_boxes, labels)
+    """
+    height, width = image_size
+    yolo_boxes = []
+
+    for box in boxes:
+        xmin, ymin, xmax, ymax = box
+        x_center = (xmin + xmax) / 2.0 / width
+        y_center = (ymin + ymax) / 2.0 / height
+        w = (xmax - xmin) / width
+        h = (ymax - ymin) / height
+        yolo_boxes.append([x_center, y_center, w, h])
+
+    return image, Tensor(yolo_boxes, dtype=float32), Tensor(labels, dtype=float32)

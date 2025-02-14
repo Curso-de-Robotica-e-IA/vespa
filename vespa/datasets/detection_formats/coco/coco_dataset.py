@@ -5,6 +5,7 @@ import torch
 from pycocotools.coco import COCO
 
 from vespa.datasets.base_dataset import BaseDataset
+from vespa.datasets.utils import pascal_voc_to_yolo
 
 
 class COCODataset(BaseDataset):
@@ -63,9 +64,19 @@ class COCODataset(BaseDataset):
                 img = augmented['image']
 
         target = {
+            'image': img,
             'boxes': torch.tensor(boxes, dtype=torch.float32),
             'labels': torch.tensor(labels, dtype=torch.int64),
         }
+
+        if self.model == "retinanet":
+            return target
+        elif self.model == "rcnn":
+            return target
+        elif self.model == "yolo":
+            return pascal_voc_to_yolo(idx, img, boxes, labels)
+        else:
+            raise ValueError(f"Unsupported model type: {self.model}")
 
         return img, target
 
