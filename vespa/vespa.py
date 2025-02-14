@@ -98,7 +98,31 @@ def train(dataset_path: str):
         ValueError: If no task type is set.
     """
     if _task == "detection":
-        return detection.train_model(_model, dataset_path, _dataset_format)
+        dataset_kwargs = {
+            "txt_file": "train.txt",
+        }
+        return detection.train_model(_model, dataset_path, _dataset_format, **dataset_kwargs)
+    else:
+        raise ValueError("No task type set. Use set_task().")
+    
+def validate(dataset_path: str):
+    """
+    Validates a model using the selected task and dataset format.
+
+    Args:
+        dataset_path (str): Path to the dataset.
+
+    Returns:
+        str: Validation results.
+
+    Raises:
+        ValueError: If no task type is set.
+    """
+    if _task == "detection":
+        dataset_kwargs = {
+            "txt_file": "val.txt",
+        }
+        return detection.validate_model(_model, dataset_path, _dataset_format, **dataset_kwargs)
     else:
         raise ValueError("No task type set. Use set_task().")
 
@@ -139,51 +163,3 @@ def list_dataset_formats():
         list: List of supported dataset formats.
     """
     return ["yolo", "coco", "pascal_voc"]
-
-def train_model(model_name: str, dataset_path: str, dataset_format: str):
-    """
-    Trains a specific detection model.
-
-    Args:
-        model_name (str): The name of the model to train.
-        dataset_path (str): Path to the dataset.
-        dataset_format (str): The format of the dataset.
-
-    Raises:
-        ValueError: If an unsupported model name is provided.
-    """
-    if model_name == "retinanet":
-        from vespa.methods.detection.retinanet.model import RetinaNet
-        model = RetinaNet(num_classes=9)
-        model.fit(dataset_path, batch_size=4, epochs=20, device="cuda")
-    elif model_name == "rcnn":
-        from vespa.methods.detection.rcnn.model import RCNN
-        model = RCNN(num_classes=9)
-        model.fit(dataset_path, batch_size=4, epochs=20, device="cuda")
-    else:
-        raise ValueError("Unsupported model name.")
-
-def run_inference(model_name: str, image_path: str):
-    """
-    Runs inference using a specified detection model.
-
-    Args:
-        model_name (str): The name of the model to use.
-        image_path (str): Path to the input image.
-
-    Returns:
-        dict: Inference results.
-
-    Raises:
-        ValueError: If an unsupported model name is provided.
-    """
-    if model_name == "retinanet":
-        from vespa.methods.detection.retinanet.model import RetinaNet
-        model = RetinaNet(num_classes=9)
-        return model.predict(image_path)
-    elif model_name == "rcnn":
-        from vespa.methods.detection.rcnn.model import RCNN
-        model = RCNN(num_classes=9)
-        return model.predict(image_path)
-    else:
-        raise ValueError("Unsupported model name.")

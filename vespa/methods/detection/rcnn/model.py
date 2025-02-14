@@ -14,13 +14,13 @@ class RCNN(BaseModel):
     def __init__(
         self,
         num_classes: int = 9,
-        weights: Optional[str] = 'DEFAULT',
+        weights: Optional[str] = None,
         optimizer_name: str = 'adam',
         lr: float = 0.0001,
         weight_decay: float = 0.0001,
     ):
         super().__init__()
-        self.model = fasterrcnn_resnet50_fpn_v2(weights=weights)
+        self.model = fasterrcnn_resnet50_fpn_v2(weights=weights, num_classes=num_classes)
         in_features = self.model.roi_heads.box_predictor.cls_score.in_features
         self.model.roi_heads.box_predictor = FastRCNNPredictor(
             in_features, num_classes

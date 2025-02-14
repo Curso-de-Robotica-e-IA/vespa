@@ -35,7 +35,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "vespa=vespa.vespa.cli:main",
+            "vespa=vespa.cli.cli:main",
         ],
     },
     classifiers=[

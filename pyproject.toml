@@ -21,6 +21,7 @@ ruff = "^0.9.0"
 pytest = "^8.3.4"
 taskipy = "^1.14.1"
 lark = "^1.2.2"
+setuptools = "^75.8.0"
 
 # Torch 2.2.2 with CUDA 12.1 or higher
 torch = [
@@ -35,7 +36,9 @@ torchvision = [
     { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32" },
     { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux" },
 ]
-setuptools = "^75.8.0"
+
+[tool.poetry.scripts]
+vespa = "vespa.cli.cli:main"
 
 [tool.ruff]
 line-length = 79

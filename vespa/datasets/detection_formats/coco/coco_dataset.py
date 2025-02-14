@@ -8,7 +8,7 @@ from vespa.datasets.base_dataset import BaseDataset
 
 
 class COCODataset(BaseDataset):
-    def __init__(self, root_dir, txt_file, transforms=None):
+    def __init__(self, root_dir, txt_file, transforms=None, model_name: str = None):
         """
         Inicializa o dataset COCO.
 
@@ -21,6 +21,7 @@ class COCODataset(BaseDataset):
         super().__init__(root_dir, transforms)
         self.coco = COCO(txt_file)
         self.image_ids = list(self.coco.imgs.keys())
+        self.model = model_name
 
     def __getitem__(self, idx):
         """

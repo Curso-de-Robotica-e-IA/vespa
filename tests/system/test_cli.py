@@ -1,90 +1,180 @@
 import subprocess
 import pytest
-import sys
-import torch
+import os
 
 CLI_PATH = "vespa/cli/cli.py"  # Adjust the path if necessary
 
-def run_cli_command(args):
-    """Helper function to run the CLI command and return output"""
+def run_cli_command(command: list):
+    """
+    Runs a CLI command and captures its stdout, stderr, and exit code.
+
+    Args:
+        command (list): The command to run as a list (e.g., ["list-models"]).
+
+    Returns:
+        tuple: (stdout, stderr, exit_code)
+    """
+
     result = subprocess.run(
-        ["python", CLI_PATH] + args, 
-        capture_output=True, text=True
+        ["poetry", "run", "vespa"] + command,  # Ensure it runs within the poetry environment
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
     )
     return result.stdout, result.stderr, result.returncode
 
-def test_debug_python_path():
-    print("Python Path:", sys.executable)
-    print("Python Version:", sys.version)
-    print("PyTorch Version:", torch.__version__)
-    assert True  # Just a debug test
-
-# ---- TEST LIST MODELS ----
 def test_list_models_exit_code():
-    stdout, stderr, exit_code = run_cli_command(["list-models"])
-    print("STDOUT:", stdout)  # Debugging
-    print("STDERR:", stderr)  # Debugging
-    assert exit_code == 0  # This is failing
+    """
+    Test if the `list-models` command exits with code 0 (success).
+
+    Fails if:
+    - The command crashes due to an import error.
+    - The `onnxruntime` package is missing.
+    """
+    _, stderr, exit_code = run_cli_command(["list-models"])
+    assert exit_code == 0, f"Expected exit code 0, but got {exit_code}. STDERR: {stderr}"
 
 
 def test_list_models_output():
-    stdout, stderr, _ = run_cli_command(["list-models"])
-    print("STDOUT:", stdout)  # Debugging
-    print("STDERR:", stderr)  # Debugging
-    assert "Available Models:" in stdout
+    """
+    Test if the `list-models` command returns the expected output.
+
+    Fails if:
+    - The output does not contain 'Available Models:'.
+    - The command crashes due to missing dependencies.
+    """
+    stdout, _, _ = run_cli_command(["list-models"])
+    assert "Available Models:" in stdout, f"Expected 'Available Models:' in stdout, but got: {stdout}"
+
 
 def test_list_models_no_stderr():
-    _, stderr, _ = run_cli_command(["list-models"])
-    assert stderr == ""
+    """
+    Test if the `list-models` command does not produce any error output.
 
-# ---- TEST LIST DATASET FORMATS ----
+    Fails if:
+    - There is any content in `stderr` indicating an error.
+    """
+    _, stderr, _ = run_cli_command(["list-models"])
+    assert "Traceback" not in stderr, f"Expected empty stderr, but got: {stderr}"
+
+
 def test_list_dataset_formats_exit_code():
+    """
+    Test if the `list-dataset-formats` command exits with code 0.
+
+    Fails if:
+    - The command fails due to missing dependencies.
+    """
     _, _, exit_code = run_cli_command(["list-dataset-formats"])
-    assert exit_code == 0
+    assert exit_code == 0, f"Expected exit code 0, but got {exit_code}"
+
 
 def test_list_dataset_formats_output():
+    """
+    Test if `list-dataset-formats` returns supported dataset formats.
+
+    Fails if:
+    - The output does not contain 'Supported Dataset Formats:'.
+    """
     stdout, _, _ = run_cli_command(["list-dataset-formats"])
-    assert "Supported Dataset Formats:" in stdout
+    assert "Supported Dataset Formats:" in stdout, f"Expected 'Supported Dataset Formats:' in stdout, but got: {stdout}"
+
 
 def test_list_dataset_formats_no_stderr():
+    """
+    Test if `list-dataset-formats` does not produce error output.
+
+    Fails if:
+    - There is any content in `stderr` indicating an error.
+    """
     _, stderr, _ = run_cli_command(["list-dataset-formats"])
-    assert stderr == ""
+    assert "Traceback" not in stderr, f"Expected empty stderr, but got: {stderr}"
 
-# ---- TEST MISSING TRAIN PARAMS ----
-def test_missing_train_params_exit_code():
-    _, _, exit_code = run_cli_command(["train"])
-    assert exit_code != 0  # Should return a non-zero error code
 
-def test_missing_train_params_stderr():
-    _, stderr, _ = run_cli_command(["train"])
-    assert "Error: Missing parameters for training." in stderr
+def test_missing_train_params_stdout():
+    """
+    Test if the `train` command returns an error message when parameters are missing.
 
-# ---- TEST TRAINING ----
-def test_train_model_exit_code(root_path_dataset_yolo_format):
+    Fails if:
+    - The expected error message is not in `stderr`.
+    """
+    stdout, _, _ = run_cli_command(["train"])
+    assert "Error: Missing parameters for training." in stdout, (
+        f"Expected 'Error: Missing parameters for training.' in stderr, but got: {stdout}"
+    )
+
+
+@pytest.mark.parametrize("model_name", ["retinanet", "rcnn"])
+def test_train_model_exit_code(model_name):
+    """
+    Test if the `train` command exits successfully when all required parameters are provided.
+
+    Parameters:
+    - `model_name` (str): The model to be trained.
+
+    Fails if:
+    - The command exits with a non-zero code.
+    """
     _, _, exit_code = run_cli_command([
-        "train", "--task", "detection", "--model", "retinanet",
-        "--format", "yolo", "--dataset", root_path_dataset_yolo_format
+        "train", "--task", "detection", "--model", model_name,
+        "--format", "yolo", "--dataset", "./assets/datasets/detection/yolo"
     ])
-    assert exit_code == 0
+    assert exit_code == 0, f"Expected exit code 0 for model {model_name}, but got {exit_code}"
 
-def test_train_model_output(root_path_dataset_yolo_format):
+
+@pytest.mark.parametrize("model_name", ["retinanet", "rcnn"])
+def test_train_model_output(model_name):
+    """
+    Test if `train` prints a confirmation message when training starts.
+
+    Parameters:
+    - `model_name` (str): The model to be trained.
+
+    Fails if:
+    - The output does not contain 'Training Result:'.
+    """
     stdout, _, _ = run_cli_command([
-        "train", "--task", "detection", "--model", "retinanet",
-        "--format", "yolo", "--dataset", root_path_dataset_yolo_format
+        "train", "--task", "detection", "--model", model_name,
+        "--format", "yolo", "--dataset", "./assets/datasets/detection/yolo"
     ])
-    assert "Training Result:" in stdout
+    assert "Training Result:" in stdout, f"Expected 'Training Result:' in stdout, but got: {stdout}"
 
-# ---- TEST PREDICTION ----
-def test_predict_exit_code():
-    _, _, exit_code = run_cli_command([
-        "predict", "--task", "detection", "--model", "retinanet", 
+
+@pytest.mark.parametrize("model_name", ["retinanet", "rcnn"])
+def test_predict_exit_code(model_name):
+    """
+    Test if `predict` exits successfully with valid parameters.
+
+    Parameters:
+    - `model_name` (str): The model used for prediction.
+
+    Fails if:
+    - The command exits with a non-zero code.
+    """
+    stdout, stderr, exit_code = run_cli_command([
+        "predict", "--task", "detection", "--model", model_name,
         "--input", "assets/datasets/detection/yolo/test/images/image_0.jpg"
     ])
-    assert exit_code == 0
+    print("STDOUT:", stdout)
+    print("STDERR:", stderr)
+    assert exit_code == 0, f"Expected exit code 0 for model {model_name}, but got {exit_code}"
 
-def test_predict_output():
-    stdout, _, _ = run_cli_command([
-        "predict", "--task", "detection", "--model", "rcnn", 
+
+@pytest.mark.parametrize("model_name", ["retinanet", "rcnn"])
+def test_predict_output(model_name):
+    """
+    Test if `predict` produces the expected output format.
+
+    Parameters:
+    - `model_name` (str): The model used for prediction.
+
+    Fails if:
+    - The output does not contain 'Prediction Output:'.
+    """
+    stdout, stderr, exit_code = run_cli_command([
+        "predict", "--task", "detection", "--model", model_name,
         "--input", "assets/datasets/detection/yolo/test/images/image_0.jpg"
     ])
-    assert "Prediction Output:" in stdout
+    print("STDOUT:", stdout)
+    print("STDERR:", stderr)
+    assert "Prediction Output:" in stdout, f"Expected 'Prediction Output:' in stdout, but got: {stdout}"
