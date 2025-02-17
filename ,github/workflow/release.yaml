@@ -73,8 +73,3 @@ jobs:
             vespa_docs.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to PyPI
-        env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
-        run: poetry publish --username __token__ --password $POETRY_PYPI_TOKEN_PYPI

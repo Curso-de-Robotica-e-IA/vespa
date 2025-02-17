@@ -57,7 +57,7 @@ docstring-code-line-length = 20
 [tool.taskipy.tasks]
 lint = 'ruff check . && ruff check . --diff'
 format = 'ruff check . --fix && ruff format'
-bdocs  = 'mkdocs serve'
+bdocs  = 'mkdocs build'
 
 [build-system]
 requires = ["poetry-core"]
