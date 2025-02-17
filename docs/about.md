@@ -8,7 +8,9 @@ Vespa is an open-source Python library designed to facilitate **classification, 
 - 🔌 Simple API for training and inference
 
 ### Contributors:
-- **Matheus** - Lead Developer
+- **Mateus Gonçalves** - Lead Developer
+- **Matheus Hopper** - Developer
+- **Jefferson Norberto** - Developer
 - Open-source community contributors
 
 For inquiries, visit our [GitHub repository](https://github.com/my-username/vespa).
