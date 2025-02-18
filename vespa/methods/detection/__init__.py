@@ -159,7 +159,7 @@ def train_model(model_name: str, dataset_path: str, dataset_format: str, **datas
 
     print(f"Using {num_classes} classes for training {model_name}")
 
-    if model_name == "yolo":
+    if model_name == "onnxyolo":
         model = ONNX_YOLO(num_classes=num_classes)
     elif model_name == "rcnn":
         model = RCNN(num_classes=num_classes)
@@ -182,7 +182,7 @@ def validate_model(model_name: str, dataset_path: str, dataset_format: str, **da
     """
     test_transforms = get_test_tranforms(dataset_format)
     val_dataset = load_dataset(dataset_path, dataset_format, model_name=model_name, transforms=test_transforms, **dataset_kwargs)
-    if model_name == "yolo":
+    if model_name == "onnxyolo":
         model = ONNX_YOLO()
     elif model_name == "rcnn":
         model = RCNN()

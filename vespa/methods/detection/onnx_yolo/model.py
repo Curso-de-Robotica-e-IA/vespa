@@ -35,7 +35,7 @@ class ONNX_YOLO(BaseModel):
         self.iou_threshold = iou_threshold
 
         # Load ONNX model
-        self.session = ort.InferenceSession(self.model_path, providers=["CPUExecutionProvider"])
+        self.session = ort.InferenceSession("yolov8.onnx", providers=["CUDAExecutionProvider"])
 
         # Get input/output names
         self.input_name = self.session.get_inputs()[0].name
@@ -88,53 +88,17 @@ class ONNX_YOLO(BaseModel):
     @no_grad()
     def test(self, test_dataset: BaseDataset, batch_size: int, device: str) -> Dict[str, float]:
         """
-        Tests the YOLO ONNX model and computes evaluation metrics.
+        Validates the model on a validation dataset.
 
         Args:
-            test_dataset (BaseDataset): Test dataset.
+            val_dataset (BaseDataset): Validation dataset.
             batch_size (int): Batch size.
             device (str): Device ('cuda' or 'cpu').
 
         Returns:
-            Dict[str, float]: Dictionary with precision, recall, and F1-score.
+            float: Average validation loss.
         """
-        self.model.eval()
-        self.model.to(device)
-
-        test_loader = DataLoader(
-            test_dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            collate_fn=custom_collate_fn,
-            num_workers=4,
-            pin_memory=True,
-        )
-
-        all_preds = []
-        all_labels = []
-
-        for images, targets in test_loader:
-            images = [img.to(device) for img in images]
-            outputs = self.predict(images)
-
-            for output, target in zip(outputs, targets):
-                preds = [det["confidence"] for det in output]
-                labels = target['labels'].cpu().numpy()
-                all_preds.extend(preds)
-                all_labels.extend(labels)
-
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            all_labels, all_preds, average='weighted'
-        )
-
-        metrics = {
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1,
-        }
-
-        print(f'Test Metrics: {metrics}')
-        return metrics
+        raise NotImplementedError("YOLO ONNX does not support test.")
 
     @no_grad()
     def predict(self, images: List[Tensor], device: str = 'cuda') -> List[Dict[str, Tensor]]:
@@ -152,7 +116,7 @@ class ONNX_YOLO(BaseModel):
         results = []
 
         for image in images:
-            input_tensor = image.unsqueeze(0).numpy()  # Convert to ONNX format
+            input_tensor = image.unsqueeze(0).cpu().numpy()  # Converte para CPU antes do numpy
             outputs = self.session.run([self.output_name], {self.input_name: input_tensor})
             results.append(outputs)
 

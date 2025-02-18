@@ -26,7 +26,7 @@ Commands:
 Arguments:
     - `--task` : Specifies the AI task type (`classification`, `regression`, `detection`).
     - `--dataset` : Path to the dataset used for training.
-    - `--format` : Format of the dataset (`yolo`, `coco`, `pascal_voc`).
+    - `--format` : Format of the dataset (`onnx_yolo`, `coco`, `pascal_voc`).
     - `--model` : Name of the model to be used for training or inference.
     - `--input` : Path to an input image for prediction.
 
