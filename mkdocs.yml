@@ -1,0 +1,45 @@
+site_name: Vespa Documentation
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Installation:
+      - Overview: installation/installation.md
+      - Requirements: installation/requirements.md
+      - Configuration: installation/configuration.md
+  - Usage:
+      - Setup: usage/setup.md
+      - Examples: usage/examples.md
+      - CLI Usage: usage/cli-usage.md
+      - API Integration: usage/api-integration.md
+  - API:
+      - Overview: api/index.md
+      - Endpoints: api/endpoints.md
+      - Request: api/request.md
+      - Response: api/response.md
+      - Errors: api/errors.md
+      - Examples: api/examples.md
+  - Datasets:
+      - Overview: datasets/detection/overview.md
+      - YOLO: datasets/detection/yolo.md
+      - COCO: datasets/detection/coco.md
+      - PASCAL_VOC: datasets/detection/pascal_voc.md
+  - Methods:
+      - Overview: methods/detection/index.md
+      - YOLO: methods/detection/yolo.md
+      - RCNN: methods/detection/rcnn.md
+      - Retinanet: methods/detection/retinanet.md
+  - Development:
+      - Code Structure: development/structure.md
+      - Contributing: development/contributing.md
+      - Deployment: development/deployment.md
+  - FAQ: faq.md
+  - About: about.md
+
+plugins:
+  - search
+  - mkdocstrings
