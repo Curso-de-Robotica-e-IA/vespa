@@ -78,17 +78,20 @@ computer vision tasks:
 - **RetinaNet**: An efficient one-stage detector with a focal
 loss to address class imbalance.
 - **YOLO**: Real-time object detection model with high accuracy.
+- [**ARNIQA**](https://github.com/miccunifi/ARNIQA): A CNN-based No-Reference Image Quality Assessment(NR-IQA) using a 
+self supervised learning with a linear regressor. 
 
 Each model comes pre-trained on popular datasets,
 and they can be fine-tuned on your custom dataset.
 
 ### Model Specifications
 
-| Model     | Task            | Architecture     | Pretrained Dataset   |
-|-----------|-----------------|------------------|----------------------|
-| RCNN      | Object Detection| Region-based CNN | COCO, Pascal VOC     |
-| RetinaNet | Object Detection| Focal Loss CNN   | COCO                 |
-| YOLO      | Object Detection| Darknet-based    | YOLO                 |
+| Model     | Task             | Architecture     | Pretrained Dataset |
+|-----------|------------------|------------------|--------------------|
+| RCNN      | Object Detection | Region-based CNN | COCO, Pascal VOC   |
+| RetinaNet | Object Detection | Focal Loss CNN   | COCO               |
+| YOLO      | Object Detection | Darknet-based    | YOLO               |
+| ARNIQA    | NR-IQA           | SSL + LR         | KonIQ-10k          |
 
 ## Metrics
 
@@ -132,6 +135,13 @@ for training and testing:
 segmentation, and captioning.
 - **Pascal VOC**: A popular dataset for object
 detection and segmentation.
+- [**LIVE Database**](https://live.ece.utexas.edu/research/Quality/subjective.htm): A traditional IQA dataset.
+- [**CSIQ**](https://s2.smu.edu/~eclarson/csiq.html): A IQA dataset with synthetic distortions.
+- [**TID2013**](https://www.ponomarenko.info/tid2013.htm): A IQA dataset with 3000 synthetic distorted images.
+- [**KADID-10k**](https://database.mmsp-kn.de/kadid-10k-database.html): A large-scale artificially distorted IQA dataset.
+- [**FLIVE**](https://baidut.github.io/PaQ-2-PiQ/#download-zone): The largest subjective picture quality dataset.
+- [**SPAQ**](https://github.com/h4nwei/SPAQ): A IQA dataset constructed with smartphone images.
+- [**KonIQ-10k**](https://database.mmsp-kn.de/koniq-10k-database.html): An ecologically valid IQA database .
 - **Custom Datasets**: You can easily integrate your custom
 dataset by following the dataset configuration guide.
 
