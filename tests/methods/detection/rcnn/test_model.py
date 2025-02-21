@@ -1,5 +1,6 @@
 import torch
 from torch import Tensor
+import torch.nn.functional as F
 
 
 def test_model_list(rcnn_pretrained_fixture, tensor_image_fixture):
@@ -41,16 +42,28 @@ def test_model_labels(rcnn_pretrained_fixture, tensor_image_fixture):
         assert isinstance(result['labels'], Tensor)
 
 
-def test_model_train_loop_gpu(
-    rcnn_pretrained_fixture, yolo_dataset_train_rcnn
-):
+def test_model_train_loop_gpu(rcnn_pretrained_fixture, yolo_dataset_train_rcnn):
+    # Obtém o dispositivo do modelo
+    device = next(rcnn_pretrained_fixture.parameters()).device
+
+    # Clona os pesos antes do treinamento no dispositivo correto
+    initial_weights = {name: param.clone().detach() for name, param in rcnn_pretrained_fixture.named_parameters()}
+
+    # Treina o modelo
     rcnn_pretrained_fixture.fit(yolo_dataset_train_rcnn, 4, 4, 0)
 
+    # Verifica se os pesos mudaram
+    for name, param in rcnn_pretrained_fixture.named_parameters():
+        assert not torch.equal(initial_weights[name].to(param.device), param), f"Peso {name} não mudou após o treino!"
 
-def test_model_train_loop_cpu(
-    rcnn_pretrained_fixture, yolo_dataset_train_rcnn
-):
+
+def test_model_train_loop_cpu(rcnn_pretrained_fixture, yolo_dataset_train_rcnn):
+    initial_weights = {name: param.clone() for name, param in rcnn_pretrained_fixture.named_parameters()}
+    
     rcnn_pretrained_fixture.fit(yolo_dataset_train_rcnn, 1, 1, 'cpu')
+
+    for name, param in rcnn_pretrained_fixture.named_parameters():
+        assert not torch.equal(initial_weights[name], param), f"Peso {name} não mudou após o treino!"
 
 
 def test_model_sketch_list(rcnn_sketch_fixture, tensor_image_fixture):
