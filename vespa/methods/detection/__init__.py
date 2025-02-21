@@ -45,8 +45,6 @@ import yaml
 import json
 import xml.etree.ElementTree as ET
 from vespa.datasets.detection_formats import load_dataset
-from .onnx_yolo.model import ONNX_YOLO
-from .rcnn.model import RCNN
 from .retinanet.model import RetinaNet
 from vespa.datasets.detection_formats.yolo.yolo_transforms import get_yolo_train_transforms, get_yolo_test_transforms
 from vespa.datasets.detection_formats.coco.coco_transforms import get_coco_train_transforms, get_coco_test_transforms
@@ -159,11 +157,7 @@ def train_model(model_name: str, dataset_path: str, dataset_format: str, **datas
 
     print(f"Using {num_classes} classes for training {model_name}")
 
-    if model_name == "onnxyolo":
-        model = ONNX_YOLO(num_classes=num_classes)
-    elif model_name == "rcnn":
-        model = RCNN(num_classes=num_classes)
-    elif model_name == "retinanet":
+    if model_name == "retinanet":
         model = RetinaNet(num_classes=num_classes)
     else:
         raise ValueError("Unsupported model name.")
@@ -182,11 +176,7 @@ def validate_model(model_name: str, dataset_path: str, dataset_format: str, **da
     """
     test_transforms = get_test_tranforms(dataset_format)
     val_dataset = load_dataset(dataset_path, dataset_format, model_name=model_name, transforms=test_transforms, **dataset_kwargs)
-    if model_name == "onnxyolo":
-        model = ONNX_YOLO()
-    elif model_name == "rcnn":
-        model = RCNN()
-    elif model_name == "retinanet":
+    if model_name == "retinanet":
         model = RetinaNet()
     else:
         raise ValueError("Unsupported model name.")
@@ -225,11 +215,7 @@ def run_inference(model_name: str, image_path: str):
     image = image.unsqueeze(0)  # Add batch dimension
 
     # Load the correct model
-    if model_name == "onnx_yolo":
-        model = ONNX_YOLO()
-    elif model_name == "rcnn":
-        model = RCNN()
-    elif model_name == "retinanet":
+    if model_name == "retinanet":
         model = RetinaNet()
     else:
         raise ValueError("Unsupported model name.")
