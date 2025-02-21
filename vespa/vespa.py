@@ -36,7 +36,7 @@ Author:
     - Vespa AI Team
 """
 
-from vespa.methods import detection, classification, regression
+from vespa.methods import detection
 from vespa.datasets import detection_formats
 
 # Global variables to store selected task, model, and dataset format
@@ -55,7 +55,7 @@ def set_task(task_type: str):
         ValueError: If an invalid task type is provided.
     """
     global _task
-    if task_type not in ["classification", "regression", "detection"]:
+    if task_type not in ["detection"]:
         raise ValueError("Invalid task type. Choose from 'classification', 'regression', 'detection'.")
     _task = task_type
 

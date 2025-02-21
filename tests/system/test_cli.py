@@ -1,8 +1,5 @@
 import subprocess
 import pytest
-import os
-
-CLI_PATH = "vespa/cli/cli.py"  # Adjust the path if necessary
 
 def run_cli_command(command: list):
     """

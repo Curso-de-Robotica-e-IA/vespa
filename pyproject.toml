@@ -36,6 +36,7 @@ torchvision = [
     { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-win_amd64.whl", platform = "win32" },
     { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux" },
 ]
+cyclopts = "^3.9.0"
 
 [tool.poetry.scripts]
 vespa = "vespa.cli.cli:main"
