@@ -187,7 +187,7 @@ def generate_motion_kernel(length: int, angle: int) -> torch.Tensor:
     if cos_phi > 0:
         motion_kernel = np.flipud(motion_kernel)
 
-    return torch.from_numpy(motion_kernel).float()
+    return torch.from_numpy(motion_kernel.copy()).float()
 
 
 def filter2D(img: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
