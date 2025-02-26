@@ -1,5 +1,4 @@
 import torch
-from torchaudio.functional import dither
 from torchvision.io.image import decode_jpeg, encode_jpeg
 from torchvision import transforms
 import numpy as np
@@ -13,23 +12,30 @@ from PIL import Image
 import ctypes
 import kornia
 
-from utils.utils_distortions import fspecial, filter2D, curves, imscatter, mapmm
+from utils.utils_distortions import (generate_gaussian_kernel, generate_disk_kernel, generate_motion_kernel, filter2D,
+                                     curves, imscatter, normalize)
 
 PROJECT_ROOT = Path(__file__).absolute().parents[1].absolute()
 
 if os.name == 'posix':
-    dither_file = "dither.so"
+    DITHER_FILE = "dither.so"
 elif os.name == 'nt':
-    dither_file = "dither.dll"
+    DITHER_FILE = "dither.dll"
 else:
     raise NameError("Uknown OS")
 
-dither_cpp = ctypes.CDLL(str(PROJECT_ROOT / "utils" / "dither_extension" / dither_file))
-dither_cpp.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int,
+DITHER_CPP = ctypes.CDLL(str(PROJECT_ROOT / "utils" / "dither_extension" / DITHER_FILE))
+DITHER_CPP.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int,
                        ctypes.c_int]
 
 
-def gaussian_blur(x: torch.Tensor, blur_sigma: int = 0.1) -> torch.Tensor:
+"""
+The distortions functions implemented in this file follows the distortions proposed in the ARNIQA paper 
+https://arxiv.org/abs/2310.14918.
+"""
+
+
+def gaussian_blur(x: torch.Tensor, blur_sigma: float = 0.1) -> torch.Tensor:
     """
     Applies a Gaussian blur to an input tensor.
 
@@ -37,20 +43,19 @@ def gaussian_blur(x: torch.Tensor, blur_sigma: int = 0.1) -> torch.Tensor:
         x (torch.Tensor): The input tensor, expected to have shape
                           (C, H, W) for a single image or (N, C, H, W) for a batch of images.
                           If (C, H, W) is provided, it will be unsqueezed to (1, C, H, W).
-        blur_sigma (int, optional): The standard deviation of the Gaussian kernel. Determines
+        blur_sigma (float, optional): The standard deviation of the Gaussian kernel. Determines
                                     the amount of blur. Default is 0.1.
 
     Returns:
         torch.Tensor: The blurred tensor with the same shape as the input tensor.
     """
     fs = 2 * math.ceil(2 * blur_sigma) + 1
-    h = fspecial('gaussian', (fs, fs), blur_sigma)
-    h = torch.from_numpy(h).float()
+    gaussian_kernel = generate_gaussian_kernel((fs, fs), blur_sigma)
 
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
 
-    y = filter2D(x, h.unsqueeze(0)).squeeze(0)
+    y = filter2D(x, gaussian_kernel.unsqueeze(0)).squeeze(0)
     return y
 
 
@@ -68,25 +73,24 @@ def lens_blur(x: torch.Tensor, radius: int) -> torch.Tensor:
      Returns:
          torch.Tensor: The blurred tensor with the same shape as the input tensor.
     """
-    h = fspecial('disk', radius)
-    h = torch.from_numpy(h).float()
+    disk_kernel = generate_disk_kernel(radius)
 
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
 
-    y = filter2D(x, h.unsqueeze(0)).squeeze(0)
+    y = filter2D(x, disk_kernel.unsqueeze(0)).squeeze(0)
     return y
 
 
-def motion_blur(x: torch.Tensor, radius: int, angle: bool = None) -> torch.Tensor:
+def motion_blur(image: torch.Tensor, length: int, angle: bool = None) -> torch.Tensor:
     """
     Applies a motion blur effect to an input tensor using a linear motion kernel.
 
     Args:
-        x (torch.Tensor): The input tensor, expected to have shape
+        image (torch.Tensor): The input tensor, expected to have shape
                           (C, H, W) for a single image or (N, C, H, W) for a batch of images.
                           If (C, H, W) is provided, it will be unsqueezed to (1, C, H, W).
-        radius (int): The length of the motion blur kernel, which determines the intensity
+        length (int): The length of the motion blur kernel, which determines the intensity
                       and spread of the blur effect.
         angle (bool, optional): The angle of the motion blur in degrees. If not provided,
                                 a random angle between 0 and 180 degrees will be used.
@@ -96,17 +100,16 @@ def motion_blur(x: torch.Tensor, radius: int, angle: bool = None) -> torch.Tenso
     """
     if angle is None:
         angle = random.randint(0, 180)
-    h = fspecial('motion', radius, angle)
-    h = torch.from_numpy(h.copy()).float()
+    motion_kernel = generate_motion_kernel(length, angle)
 
-    if len(x.shape) == 3:
-        x = x.unsqueeze(0)
+    if len(image.shape) == 3:
+        image = image.unsqueeze(0)
 
-    y = filter2D(x, h.unsqueeze(0)).squeeze(0)
-    return y
+    dist_image = filter2D(image, motion_kernel.unsqueeze(0)).squeeze(0)
+    return dist_image
 
 
-def color_diffusion(x: torch.Tensor, amount: int) -> torch.Tensor:
+def color_diffusion(x: torch.Tensor, factor: int) -> torch.Tensor:
     """
     Applies a color diffusion effect to an input image by blurring and scaling its color channels
     in the Lab color space.
@@ -115,26 +118,25 @@ def color_diffusion(x: torch.Tensor, amount: int) -> torch.Tensor:
         x (torch.Tensor): The input tensor representing an image, expected to have shape
                           (C, H, W) where C=3 for RGB channels. The channels are assumed to be
                           in RGB order.
-        amount (int): The intensity of the color diffusion effect. Higher values result in
+        factor (int): The intensity of the color diffusion effect. Higher values result in
                       stronger blurring and scaling of the color channels.
 
     Returns:
         torch.Tensor: The image tensor with the color diffusion effect applied, in RGB format
                       with shape (C, H, W) where C=3.
     """
-    blur_sigma = 1.5 * amount + 2
-    scaling = amount
+    blur_sigma = 1.5 * factor + 2
+    scaling = factor
     x = x[[2, 1, 0], ...]
     lab = kornia.color.rgb_to_lab(x)
 
     fs = 2 * math.ceil(2 * blur_sigma) + 1
-    h = fspecial('gaussian', (fs, fs), blur_sigma)
-    h = torch.from_numpy(h).float()
+    gaussian_kernel = generate_gaussian_kernel((fs, fs), blur_sigma)
 
     if len(lab.shape) == 3:
         lab = lab.unsqueeze(0)
 
-    diff_ab = filter2D(lab[:, 1:3, ...], h.unsqueeze(0))
+    diff_ab = filter2D(lab[:, 1:3, ...], gaussian_kernel.unsqueeze(0))
     lab[:, 1:3, ...] = diff_ab * scaling
 
     y = torch.trunc(kornia.color.lab_to_rgb(lab) * 255.) / 255.
@@ -142,7 +144,7 @@ def color_diffusion(x: torch.Tensor, amount: int) -> torch.Tensor:
     return y
 
 
-def color_shift(x: torch.Tensor, amount: int) -> torch.Tensor:
+def color_shift(x: torch.Tensor, factor: int) -> torch.Tensor:
     """
     Applies a gradient-guided color shift effect to an input image. This operation displaces
     a specific color channel of the image spatially while blending it with the original
@@ -151,16 +153,26 @@ def color_shift(x: torch.Tensor, amount: int) -> torch.Tensor:
     Args:
         x (torch.Tensor): The input image tensor with shape (C, H, W), where C=3 for RGB channels.
                           The tensor is expected to be normalized in the range [0, 1].
-        amount (int): The magnitude of the spatial shift applied to the selected color channel.
+        factor (int): The magnitude of the spatial shift applied to the selected color channel.
                       Higher values result in a more noticeable shift.
 
     Returns:
         torch.Tensor: The modified image tensor with the color shift effect applied, maintaining
                       the original shape (C, H, W).
     """
-    def perc(x, perc):
-        xs = torch.sort(x)
-        i = len(xs) * perc / 100.
+    def perc(img_tensor: torch.Tensor, percentile: int) -> torch.Tensor:
+        """
+          Computes the given percentile value from a tensor.
+
+          Args:
+              img_tensor (torch.Tensor): The input tensor containing numerical values.
+              percentile (float): The percentile to compute, in the range [0, 100].
+
+          Returns:
+              torch.Tensor: The value at the specified percentile.
+        """
+        xs = torch.sort(img_tensor)
+        i = len(xs) * percentile / 100.
         i = max(min(i, len(xs)), 1)
         v = xs[round(i - 1)]
         return v
@@ -170,10 +182,9 @@ def color_shift(x: torch.Tensor, amount: int) -> torch.Tensor:
     e = torch.sum(gradxy ** 2, 2) ** 0.5
 
     fs = 2 * math.ceil(2 * 4) + 1
-    h = fspecial('gaussian', (fs, fs), 4)
-    h = torch.from_numpy(h).float()
+    gaussian_kernel = generate_gaussian_kernel((fs, fs), 4)
 
-    e = filter2D(e, h.unsqueeze(0))
+    e = filter2D(e, gaussian_kernel.unsqueeze(0))
 
     mine = torch.min(e)
     maxe = torch.max(e)
@@ -190,7 +201,7 @@ def color_shift(x: torch.Tensor, amount: int) -> torch.Tensor:
     channel = 1
     g = x[channel, :, :]
     a = np.random.random((1, 2))
-    amount_shift = np.round(a / (np.sum(a ** 2) ** 0.5) * amount)[0].astype(int)
+    amount_shift = np.round(a / (np.sum(a ** 2) ** 0.5) * factor)[0].astype(int)
 
     y = F.pad(g, (amount_shift[0], amount_shift[0]), mode='replicate')
     y = F.pad(y.transpose(1, 0), (amount_shift[1], amount_shift[1]), mode='replicate').transpose(1, 0)
@@ -207,14 +218,14 @@ def color_shift(x: torch.Tensor, amount: int) -> torch.Tensor:
     return x
 
 
-def color_saturation1(x: torch.Tensor, factor: int) -> torch.Tensor:
+def color_saturation_hsv(x: torch.Tensor, factor: float) -> torch.Tensor:
     """
     Adjusts the color saturation of an RGB image by scaling the saturation channel in HSV color space.
 
     Args:
     x : torch.Tensor
         Input image tensor with shape `(C, H, W)` where `C = 3` (RGB format) and pixel values in the range `[0, 1]`.
-    factor : int
+    factor : float
         Scaling factor to adjust the saturation. A value greater than 1 increases saturation,
         while a value between 0 and 1 decreases saturation.
 
@@ -229,7 +240,7 @@ def color_saturation1(x: torch.Tensor, factor: int) -> torch.Tensor:
     return y[[2, 1, 0], ...]
 
 
-def color_saturation2(x: torch.Tensor, factor: int) -> torch.Tensor:
+def color_saturation_lab(x: torch.Tensor, factor: int) -> torch.Tensor:
     """
     Adjusts the color saturation of an RGB image by scaling the chromatic channels in LAB color space.
 
@@ -251,7 +262,7 @@ def color_saturation2(x: torch.Tensor, factor: int) -> torch.Tensor:
     return y[[2, 1, 0], ...]
 
 
-def jpeg2000(x: torch.Tensor, ratio: int) -> torch.Tensor:
+def compress_jpeg2000(x: torch.Tensor, ratio: int) -> torch.Tensor:
     """
         Applies JPEG2000 compression to an input image tensor and returns the compressed and decompressed image.
 
@@ -289,7 +300,7 @@ def jpeg2000(x: torch.Tensor, ratio: int) -> torch.Tensor:
     return y
 
 
-def jpeg(x: torch.Tensor, quality: int) -> torch.Tensor:
+def compress_jpeg(x: torch.Tensor, quality: int) -> torch.Tensor:
     """
     Applies JPEG compression to an input image tensor and returns the compressed and decompressed image.
 
@@ -310,7 +321,7 @@ def jpeg(x: torch.Tensor, quality: int) -> torch.Tensor:
     return y
 
 
-def white_noise(x: torch.Tensor, var: float, clip: bool = True, rounds: bool = False) -> torch.Tensor:
+def white_noise(x: torch.Tensor, variance: float, clip: bool = True, rounds: bool = False) -> torch.Tensor:
     """
     Adds Gaussian white noise to an input image tensor and optionally applies clipping and rounding.
 
@@ -318,7 +329,7 @@ def white_noise(x: torch.Tensor, var: float, clip: bool = True, rounds: bool = F
     x : torch.Tensor
         Input image tensor with shape `(C, H, W)` or `(N, C, H, W)` where `C` is the number of channels.
         Pixel values should be in the range `[0, 1]`.
-    var : float
+    variance : float
         Variance of the Gaussian white noise to be added.
     clip : bool, optional
         If `True`, clips the resulting tensor to the range `[0, 1]`. Default is `True`.
@@ -330,7 +341,7 @@ def white_noise(x: torch.Tensor, var: float, clip: bool = True, rounds: bool = F
         Output tensor with added Gaussian noise and optionally clipped or rounded values.
         The output shape matches the input shape.
     """
-    noise = torch.randn(*x.size(), dtype=x.dtype) * math.sqrt(var)
+    noise = torch.randn(*x.size(), dtype=x.dtype) * math.sqrt(variance)
 
     y = x + noise
 
@@ -343,7 +354,7 @@ def white_noise(x: torch.Tensor, var: float, clip: bool = True, rounds: bool = F
     return y
 
 
-def white_noise_cc(x: torch.Tensor, var: float, clip: bool = True, rounds: bool = False) -> torch.Tensor:
+def white_noise_ycbcr(x: torch.Tensor, variance: float, clip: bool = True, rounds: bool = False) -> torch.Tensor:
     """
         Adds Gaussian white noise to an input image tensor in the YCbCr color space
         and optionally applies clipping and rounding after converting back to RGB.
@@ -352,7 +363,7 @@ def white_noise_cc(x: torch.Tensor, var: float, clip: bool = True, rounds: bool 
         x : torch.Tensor
             Input image tensor with shape `(C, H, W)` or `(N, C, H, W)` where `C` is the number of channels.
             Pixel values should be in the range `[0, 1]`.
-        var : float
+        variance : float
             Variance of the Gaussian white noise to be added.
         clip : bool, optional
             If `True`, clips the resulting tensor to the range `[0, 1]`. Default is `True`.
@@ -364,7 +375,7 @@ def white_noise_cc(x: torch.Tensor, var: float, clip: bool = True, rounds: bool 
             Output tensor with added Gaussian noise, converted back to RGB, and optionally clipped or rounded.
             The output shape matches the input shape.
     """
-    noise = torch.randn(*x.size(), dtype=x.dtype) * math.sqrt(var)
+    noise = torch.randn(*x.size(), dtype=x.dtype) * math.sqrt(variance)
 
     ycbcr = kornia.color.rgb_to_ycbcr(x)
     y = ycbcr + noise
@@ -381,7 +392,7 @@ def white_noise_cc(x: torch.Tensor, var: float, clip: bool = True, rounds: bool 
     return y
 
 
-def impulse_noise(x: torch.Tensor, d: float, s_vs_p: float = 0.5) -> torch.Tensor:
+def impulse_noise(x: torch.Tensor, noise_density: float, sp_ratio: float = 0.5) -> torch.Tensor:
     """
       Adds impulse noise (salt-and-pepper noise) to an input image tensor.
 
@@ -389,10 +400,10 @@ def impulse_noise(x: torch.Tensor, d: float, s_vs_p: float = 0.5) -> torch.Tenso
       x : torch.Tensor
           Input image tensor with shape `(C, H, W)` where `C` is the number of channels.
           Pixel values should be in the range `[0, 1]`.
-      d : float
+      noise_density : float
           Density of the impulse noise. This value determines the proportion of pixels
           affected by salt-and-pepper noise. Should be in the range `[0, 1]`.
-      s_vs_p : float, optional
+      sp_ratio : float, optional
           Salt-to-pepper ratio. Determines the proportion of affected pixels that become
           "salt" (white, value = 1) vs "pepper" (black, value = 0). Default is `0.5` (equal salt and pepper).
 
@@ -400,13 +411,13 @@ def impulse_noise(x: torch.Tensor, d: float, s_vs_p: float = 0.5) -> torch.Tenso
       torch.Tensor
           Output tensor with added salt-and-pepper noise. The shape matches the input shape.
     """
-    num_sp = int(d * x.shape[0] * x.shape[1] * x.shape[2])
+    num_sp = int(noise_density * x.shape[0] * x.shape[1] * x.shape[2])
 
     coords = np.concatenate((np.random.randint(0, 3, (num_sp, 1)),
                              np.random.randint(0, x.shape[1], (num_sp, 1)),
                              np.random.randint(0, x.shape[2], (num_sp, 1))), 1)
 
-    num_salt = int(s_vs_p * num_sp)
+    num_salt = int(sp_ratio * num_sp)
 
     coords_salt = coords[:num_salt].transpose(1, 0)
     coords_pepper = coords[num_salt:].transpose(1, 0)
@@ -416,7 +427,7 @@ def impulse_noise(x: torch.Tensor, d: float, s_vs_p: float = 0.5) -> torch.Tenso
     return x
 
 
-def multiplicative_noise(x: torch.Tensor, var: float) -> torch.Tensor:
+def multiplicative_noise(x: torch.Tensor, variance: float) -> torch.Tensor:
     """
         Adds multiplicative noise to an input image tensor.
 
@@ -424,20 +435,20 @@ def multiplicative_noise(x: torch.Tensor, var: float) -> torch.Tensor:
         x : torch.Tensor
             Input image tensor with shape `(C, H, W)` where `C` is the number of channels.
             Pixel values should be in the range `[0, 1]`.
-        var : float
+        variance : float
             Variance of the multiplicative noise. Determines the intensity of the noise.
 
         Returns:
         torch.Tensor
             Output tensor with added multiplicative noise. Pixel values are clipped to the range `[0, 1]`.
     """
-    noise = torch.randn(*x.size(), dtype=x.dtype) * math.sqrt(var)
+    noise = torch.randn(*x.size(), dtype=x.dtype) * math.sqrt(variance)
     y = x + x * noise
     y = torch.clip(y, 0, 1)
     return y
 
 
-def brighten(x: torch.Tensor, amount: float) -> torch.Tensor:
+def brighten(x: torch.Tensor, factor: float) -> torch.Tensor:
     """
     Adjusts the brightness of an input image tensor by modifying its luminance and applying a tone curve.
 
@@ -445,7 +456,7 @@ def brighten(x: torch.Tensor, amount: float) -> torch.Tensor:
     x : torch.Tensor
         Input image tensor with shape `(C, H, W)` where `C` is the number of channels.
         Pixel values should be in the range `[0, 1]` and represent an RGB image.
-    amount : float
+    factor : float
         Brightness adjustment factor. Positive values increase brightness,
         while negative values decrease brightness.
 
@@ -457,10 +468,10 @@ def brighten(x: torch.Tensor, amount: float) -> torch.Tensor:
     lab = kornia.color.rgb_to_lab(x)
 
     l = lab[0, ...] / 100.
-    l_ = curves(l, 0.5 + amount / 2)
+    l_ = curves(l, 0.5 + factor / 2)
     lab[0, ...] = l_ * 100.
 
-    y = curves(x, 0.5 + amount / 2)
+    y = curves(x, 0.5 + factor / 2)
 
     j = torch.clamp(kornia.color.lab_to_rgb(lab), 0, 1)
 
@@ -469,7 +480,7 @@ def brighten(x: torch.Tensor, amount: float) -> torch.Tensor:
     return y[[2, 1, 0]]
 
 
-def darken(x: torch.Tensor, amount: float, dolab: bool = False) -> torch.Tensor:
+def darken(x: torch.Tensor, factor: float, use_lab: bool = False) -> torch.Tensor:
     """
        Reduces the brightness of an input image tensor by applying a tone curve and optionally adjusting luminance in LAB color space.
 
@@ -478,9 +489,9 @@ def darken(x: torch.Tensor, amount: float, dolab: bool = False) -> torch.Tensor:
        x : torch.Tensor
            Input image tensor with shape `(C, H, W)` where `C` is the number of channels.
            Pixel values should be in the range `[0, 1]` and represent an RGB image.
-       amount : float
+       factor : float
            Darkness adjustment factor. Positive values increase the level of darkening.
-       dolab : bool, optional
+       use_lab : bool, optional
            If `True`, adjusts the luminance in the LAB color space in addition to applying the tone curve. Default is `False`.
 
        Returns:
@@ -490,21 +501,21 @@ def darken(x: torch.Tensor, amount: float, dolab: bool = False) -> torch.Tensor:
        """
     x = x[[2, 1, 0], :, :]
     lab = kornia.color.rgb_to_lab(x)
-    if dolab:
+    if use_lab:
         l = lab[0, ...] / 100.
-        l_ = curves(l, 0.5 + amount / 2)
+        l_ = curves(l, 0.5 + factor / 2)
         lab[0, ...] = l_ * 100.
 
-    y = curves(x, 0.5 - amount / 2)
+    y = curves(x, 0.5 - factor / 2)
 
-    if dolab:
+    if use_lab:
         j = torch.clamp(kornia.color.lab_to_rgb(lab), 0, 1)
         y = (2 * y + j) / 3
 
     return y[[2, 1, 0]]
 
 
-def mean_shift(x: torch.Tensor, amount: float) -> torch.Tensor:
+def mean_shift(x: torch.Tensor, factor: float) -> torch.Tensor:
     """
     Adjusts the mean intensity of an image by adding a constant value to its pixel intensities.
 
@@ -513,7 +524,7 @@ def mean_shift(x: torch.Tensor, amount: float) -> torch.Tensor:
     x : torch.Tensor
         Input image tensor with shape `(C, H, W)` where `C` is the number of channels.
         Pixel values should be in the range `[0, 1]` and represent an RGB image.
-    amount : float
+    factor : float
         The value to be added to the pixel intensities. Positive values brighten the image,
         while negative values darken it.
 
@@ -524,11 +535,11 @@ def mean_shift(x: torch.Tensor, amount: float) -> torch.Tensor:
     """
     x = x[[2, 1, 0], :, :]
 
-    y = torch.clamp(x + amount, 0, 1)
+    y = torch.clamp(x + factor, 0, 1)
     return y[[2, 1, 0]]
 
 
-def jitter(x: torch.Tensor, amount: float) -> torch.Tensor:
+def jitter(x: torch.Tensor, factor: float) -> torch.Tensor:
     """
        Applies a jitter effect to an image by randomly displacing its pixels.
 
@@ -536,18 +547,18 @@ def jitter(x: torch.Tensor, amount: float) -> torch.Tensor:
        x : torch.Tensor
            Input image tensor with shape `(C, H, W)` where `C` is the number of channels.
            Pixel values should be in the range `[0, 1]` and represent an RGB image.
-       amount : float
+       factor : float
            The magnitude of pixel displacement. Larger values result in more noticeable jitter.
 
        Returns:
        torch.Tensor
            Output image tensor with the applied jitter effect. Pixel values remain in the range `[0, 1]`.
        """
-    y = imscatter(x, amount, 5)
+    y = imscatter(x, factor, 5)
     return y
 
 
-def non_eccentricity_patch(x: torch.Tensor, pnum: int) -> torch.Tensor:
+def non_eccentricity_patch(x: torch.Tensor, num_patches: int) -> torch.Tensor:
     """
      Applies a non-eccentricity patch effect by copying random patches of the image to nearby locations.
 
@@ -555,7 +566,7 @@ def non_eccentricity_patch(x: torch.Tensor, pnum: int) -> torch.Tensor:
      x : torch.Tensor
          Input image tensor with shape `(C, H, W)` where `C` is the number of channels.
          Pixel values should be in the range `[0, 1]`.
-     pnum : int
+     num_pacthes : int
          Number of patches to generate and apply.
 
      Returns:
@@ -567,7 +578,6 @@ def non_eccentricity_patch(x: torch.Tensor, pnum: int) -> torch.Tensor:
        to nearby locations within a `16-pixel` radius.
      - The original image content outside the patches remains unchanged.
      """
-    y = x
     patch_size = [16, 16]
     radius = 16
     h_min = radius
@@ -577,16 +587,16 @@ def non_eccentricity_patch(x: torch.Tensor, pnum: int) -> torch.Tensor:
     h_max = h - patch_size[0] - radius
     w_max = w - patch_size[1] - radius
 
-    for i in range(pnum):
+    for i in range(num_patches):
         w_start = round(random.random() * (w_max - w_min)) + w_min
         h_start = round(random.random() * (h_max - h_min)) + h_min
-        patch = y[:, h_start:h_start + patch_size[0], w_start:w_start + patch_size[0]]
+        patch = x[:, h_start:h_start + patch_size[0], w_start:w_start + patch_size[0]]
 
         rand_w_start = round((random.random() - 0.5) * radius + w_start)
         rand_h_start = round((random.random() - 0.5) * radius + h_start)
-        y[:, rand_h_start:rand_h_start + patch_size[0], rand_w_start:rand_w_start + patch_size[0]] = patch
+        x[:, rand_h_start:rand_h_start + patch_size[0], rand_w_start:rand_w_start + patch_size[0]] = patch
 
-    return y
+    return x
 
 
 def pixelate(x: torch.Tensor, strength: float) -> torch.Tensor:
@@ -643,11 +653,11 @@ def quantization(x: torch.Tensor, levels: int) -> torch.Tensor:
     bins = torch.tensor([0] + return_thresholds.tolist() + [256])
     bins = bins.type(torch.int)
     image = torch.bucketize(x.contiguous() * 255., bins).to(torch.float32)
-    image = mapmm(image)
+    image = normalize(image)
     return image
 
 
-def color_block(x: torch.Tensor, pnum: int) -> torch.Tensor:
+def color_block(x: torch.Tensor, num_patches: int) -> torch.Tensor:
     """
     Adds color blocks to the input image by randomly placing patches of a uniform color.
 
@@ -671,7 +681,7 @@ def color_block(x: torch.Tensor, pnum: int) -> torch.Tensor:
     h_max = h - patch_size[0]
     w_max = w - patch_size[1]
 
-    for i in range(pnum):
+    for i in range(num_patches):
         color = np.random.random(3)
         px = math.floor(random.random() * w_max)
         py = math.floor(random.random() * h_max)
@@ -683,23 +693,23 @@ def color_block(x: torch.Tensor, pnum: int) -> torch.Tensor:
     return y
 
 
-def high_sharpen(x: torch.Tensor, amount: int, radius: int = 3) -> torch.Tensor:
+def high_sharpen(x: torch.Tensor, factor: int, radius: int = 3) -> torch.Tensor:
     """
-     Applies a high-pass sharpening filter to enhance the high-frequency details of an image.
+    Applies a high-pass sharpening filter to enhance the high-frequency details of an image.
 
-     Args:
-     x : torch.Tensor
-         Input image tensor in the format `(C, H, W)` where `C` is the number of channels (RGB),
-         with pixel values in the range `[0, 1]`.
-     amount : int
-         The intensity of sharpening to apply. A higher value results in stronger sharpening.
-     radius : int, optional (default=3)
-         The radius of the Gaussian blur used to create the sharpening filter. A larger radius
-         applies a broader blur before the sharpening step.
+    Args:
+    x : torch.Tensor
+        Input image tensor in the format `(C, H, W)` where `C` is the number of channels (RGB),
+        with pixel values in the range `[0, 1]`.
+    factor : int
+        The intensity of sharpening to apply. A higher value results in stronger sharpening.
+    radius : int, optional (default=3)
+        The radius of the Gaussian blur used to create the sharpening filter. A larger radius
+        applies a broader blur before the sharpening step.
 
-     Returns:
-     torch.Tensor
-         The sharpened image tensor with the same shape as the input.
+    Returns:
+    torch.Tensor
+        The sharpened image tensor with the same shape as the input.
      """
     x = x[[2, 1, 0], ...]
     lab = kornia.color.rgb_to_lab(x)
@@ -707,14 +717,13 @@ def high_sharpen(x: torch.Tensor, amount: int, radius: int = 3) -> torch.Tensor:
 
     filt_radius = math.ceil(radius * 2)
     fs = 2 * filt_radius + 1
-    h = fspecial('gaussian', (fs, fs), filt_radius)
-    h = torch.from_numpy(h).float()
+    gaussian_kernel = generate_gaussian_kernel((fs, fs), filt_radius)
 
     sharp_filter = torch.zeros((fs, fs))
     sharp_filter[filt_radius, filt_radius] = 1
-    sharp_filter = sharp_filter - h
+    sharp_filter = sharp_filter - gaussian_kernel
 
-    sharp_filter *= amount
+    sharp_filter *= factor
     sharp_filter[filt_radius, filt_radius] += 1
 
     l = filter2D(l, sharp_filter.unsqueeze(0))
@@ -729,7 +738,7 @@ def high_sharpen(x: torch.Tensor, amount: int, radius: int = 3) -> torch.Tensor:
     return y
 
 
-def linear_contrast_change(x: torch.Tensor, amount: float) -> torch.Tensor:
+def linear_contrast_change(x: torch.Tensor, factor: float) -> torch.Tensor:
     """
     Applies a linear contrast change to an image.
 
@@ -737,14 +746,14 @@ def linear_contrast_change(x: torch.Tensor, amount: float) -> torch.Tensor:
     x : torch.Tensor
         Input image tensor in the format `(C, H, W)` where `C` is the number of channels (RGB),
         with pixel values in the range `[0, 1]`.
-    amount : float
+    factor : float
         The amount of contrast change to apply. A positive value increases contrast, while a negative value decreases it.
 
     Returns:
     torch.Tensor
         The contrast-adjusted image tensor with the same shape as the input.
     """
-    y = curves(x, [0.25 - amount / 4, 0.75 + amount / 4])
+    y = curves(x, [0.25 - factor / 4, 0.75 + factor / 4])
     return y
 
 

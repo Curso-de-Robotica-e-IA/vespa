@@ -1,105 +1,58 @@
 from random import randrange
+import torch
+import random
+import  numpy as np
 import torchvision.transforms.functional as TF
-from typing import List, Callable, Union
+from typing import List, Callable, Union, Tuple
 from PIL.Image import Image as PILImage
 
-from utils.distortions import *
+from utils.distortions import (gaussian_blur, lens_blur, motion_blur, color_diffusion, color_shift,
+                               color_saturation_hsv, color_saturation_lab, compress_jpeg2000, compress_jpeg,
+                               white_noise, white_noise_ycbcr, impulse_noise, multiplicative_noise, brighten, darken,
+                               mean_shift, jitter, non_eccentricity_patch, pixelate, quantization, color_block,
+                               high_sharpen, linear_contrast_change, non_linear_contrast_change)
 
 
 distortion_groups = {
-    "blur": ["gaublur", "lensblur", "motionblur"],
-    "color_distortion": ["colordiff", "colorshift", "colorsat1", "colorsat2"],
-    "jpeg": ["jpeg2000", "jpeg"],
-    "noise": ["whitenoise", "whitenoiseCC", "impulsenoise", "multnoise"],
-    "brightness_change": ["brighten", "darken", "meanshift"],
-    "spatial_distortion": ["jitter", "noneccpatch", "pixelate", "quantization", "colorblock"],
-    "sharpness_contrast": ["highsharpen", "lincontrchange", "nonlincontrchange"],
-}
-
-distortion_groups_mapping = {
-    "gaublur": "blur",
-    "lensblur": "blur",
-    "motionblur": "blur",
-    "colordiff": "color_distortion",
-    "colorshift": "color_distortion",
-    "colorsat1": "color_distortion",
-    "colorsat2": "color_distortion",
-    "jpeg2000": "jpeg",
-    "jpeg": "jpeg",
-    "whitenoise": "noise",
-    "whitenoiseCC": "noise",
-    "impulsenoise": "noise",
-    "multnoise": "noise",
-    "brighten": "brightness_change",
-    "darken": "brightness_change",
-    "meanshift": "brightness_change",
-    "jitter": "spatial_distortion",
-    "noneccpatch": "spatial_distortion",
-    "pixelate": "spatial_distortion",
-    "quantization": "spatial_distortion",
-    "colorblock": "spatial_distortion",
-    "highsharpen": "sharpness_contrast",
-    "lincontrchange": "sharpness_contrast",
-    "nonlincontrchange": "sharpness_contrast",
+    "blur": ["gaussian_blur", "lens_blur", "motion_blur"],
+    "color_distortion": ["color_diffusion", "color_shift", "color_saturation_hsv", "color_saturation_lab"],
+    "jpeg": ["compress_jpeg2000", "compress_jpeg"],
+    "noise": ["white_noise", "white_noise_ycbcr", "impulse_noise", "multiplicative_noise"],
+    "brightness_change": ["brighten", "darken", "mean_shift"],
+    "spatial_distortion": ["jitter", "non_eccentricity_patch", "pixelate", "quantization", "color_block"],
+    "sharpness_contrast": ["high_sharpen", "linear_contrast_change", "non_linear_contrast_change"],
 }
 
 distortion_range = {
-    "gaublur": [0.1, 0.5, 1, 2, 5],
-    "lensblur": [1, 2, 4, 6, 8],
-    "motionblur": [1, 2, 4, 6, 10],
-    "colordiff": [1, 3, 6, 8, 12],
-    "colorshift": [1, 3, 6, 8, 12],
-    "colorsat1": [0.4, 0.2, 0.1, 0, -0.4],
-    "colorsat2": [1, 2, 3, 6, 9],
-    "jpeg2000": [16, 32, 45, 120, 170],
-    "jpeg": [43, 36, 24, 7, 4],
-    "whitenoise": [0.001, 0.002, 0.003, 0.005, 0.01],
-    "whitenoiseCC": [0.0001, 0.0005, 0.001, 0.002, 0.003],
-    "impulsenoise": [0.001, 0.005, 0.01, 0.02, 0.03],
-    "multnoise": [0.001, 0.005, 0.01, 0.02, 0.05],
+    "gaussian_blur": [0.1, 0.5, 1, 2, 5],
+    "lens_blur": [1, 2, 4, 6, 8],
+    "motion_blur": [1, 2, 4, 6, 10],
+    "color_diffusion": [1, 3, 6, 8, 12],
+    "color_shift": [1, 3, 6, 8, 12],
+    "color_saturation_hsv": [0.4, 0.2, 0.1, 0, -0.4],
+    "color_saturation_lab": [1, 2, 3, 6, 9],
+    "compress_jpeg2000": [16, 32, 45, 120, 170],
+    "compress_jpeg": [43, 36, 24, 7, 4],
+    "white_noise": [0.001, 0.002, 0.003, 0.005, 0.01],
+    "white_noise_ycbcr": [0.0001, 0.0005, 0.001, 0.002, 0.003],
+    "impulse_noise": [0.001, 0.005, 0.01, 0.02, 0.03],
+    "multiplicative_noise": [0.001, 0.005, 0.01, 0.02, 0.05],
     "brighten": [0.1, 0.2, 0.4, 0.7, 1.1],
     "darken": [0.05, 0.1, 0.2, 0.4, 0.8],
-    "meanshift": [0, 0.08, -0.08, 0.15, -0.15],
+    "mean_shift": [0, 0.08, -0.08, 0.15, -0.15],
     "jitter": [0.05, 0.1, 0.2, 0.5, 1],
-    "noneccpatch": [20, 40, 60, 80, 100],
+    "non_eccentricity_patch": [20, 40, 60, 80, 100],
     "pixelate": [0.01, 0.05, 0.1, 0.2, 0.5],
     "quantization": [20, 16, 13, 10, 7],
-    "colorblock": [2, 4, 6, 8, 10],
-    "highsharpen": [1, 2, 3, 6, 12],
-    "lincontrchange": [0., 0.15, -0.4, 0.3, -0.6],
-    "nonlincontrchange": [0.4, 0.3, 0.2, 0.1, 0.05],
-}
-
-distortion_functions = {
-    "gaublur": gaussian_blur,
-    "lensblur": lens_blur,
-    "motionblur": motion_blur,
-    "colordiff": color_diffusion,
-    "colorshift": color_shift,
-    "colorsat1": color_saturation1,
-    "colorsat2": color_saturation2,
-    "jpeg2000": jpeg2000,
-    "jpeg": jpeg,
-    "whitenoise": white_noise,
-    "whitenoiseCC": white_noise_cc,
-    "impulsenoise": impulse_noise,
-    "multnoise": multiplicative_noise,
-    "brighten": brighten,
-    "darken": darken,
-    "meanshift": mean_shift,
-    "jitter": jitter,
-    "noneccpatch": non_eccentricity_patch,
-    "pixelate": pixelate,
-    "quantization": quantization,
-    "colorblock": color_block,
-    "highsharpen": high_sharpen,
-    "lincontrchange": linear_contrast_change,
-    "nonlincontrchange": non_linear_contrast_change,
+    "color_block": [2, 4, 6, 8, 10],
+    "high_sharpen": [1, 2, 3, 6, 12],
+    "linear_contrast_change": [0., 0.15, -0.4, 0.3, -0.6],
+    "non_linear_contrast_change": [0.4, 0.3, 0.2, 0.1, 0.05],
 }
 
 
 def distort_images(image: torch.Tensor, distort_functions: list = None, distort_values: list = None,
-                   max_distortions: int = 4, num_levels: int = 5) -> torch.Tensor:
+                   max_distortions: int = 4, num_levels: int = 5) -> Tuple[torch.Tensor, list, list]:
     """
     Distorts an image using the distortion composition obtained with the image degradation model proposed in the paper
     https://arxiv.org/abs/2310.14918.
@@ -143,15 +96,15 @@ def get_distortions_composition(max_distortions: int = 7, num_levels: int = 5) -
         distort_functions (list): list of the distortion functions to apply to the image
         distort_values (list): list of the values of the distortion functions to apply to the image
     """
-    MEAN = 0
-    STD = 2.5
+    mean = 0
+    std = 2.5
 
     num_distortions = random.randint(1, max_distortions)
     groups = random.sample(list(distortion_groups.keys()), num_distortions)
     distortions = [random.choice(distortion_groups[group]) for group in groups]
-    distort_functions = [distortion_functions[dist] for dist in distortions]
+    distort_functions = [globals()[dist] for dist in distortions]
 
-    probabilities = [1 / (STD * np.sqrt(2 * np.pi)) * np.exp(-((i - MEAN) ** 2) / (2 * STD ** 2))
+    probabilities = [1 / (std * np.sqrt(2 * np.pi)) * np.exp(-((i - mean) ** 2) / (2 * std ** 2))
                      for i in range(num_levels)]  # probabilities according to a gaussian distribution
     normalized_probabilities = [prob / sum(probabilities)
                                 for prob in probabilities]  # normalize probabilities
@@ -188,7 +141,7 @@ def resize_crop(img: PILImage, crop_size: int | None = 224, downscale_factor: in
     return img
 
 
-def center_corners_crop(img: PILImage, crop_size: int = 224) -> List[PILImage]:
+def center_corners_crop(img: PILImage, crop_size: int = 224) -> List[torch.Tensor]:
     """
     Return the center crop and the four corners of the image.
 
@@ -197,7 +150,7 @@ def center_corners_crop(img: PILImage, crop_size: int = 224) -> List[PILImage]:
         crop_size (int): size of each crop
 
     Returns:
-        crops (List[PIL.Image]): list of the five crops
+        crops (List[torch.Tensor]): list of the five crops
     """
     width, height = img.size
 

@@ -2,8 +2,6 @@ import torch
 import torch.nn
 
 
-from vespa.methods.iqa.arniqa.model.resnet import ResNet
-
 class SimCLR(torch.nn.Module):
     """
        SimCLR model class used for pre-training the encoder for IQA.

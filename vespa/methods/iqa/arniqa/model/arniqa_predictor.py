@@ -24,17 +24,14 @@ class ARNIQAPredictor(nn.Module):
         self.regressor: nn.Module = torch.load(regressor_weights_path, map_location="cpu")
         self.regressor.eval()
 
-    def forward(self, img, img_ds, return_embedding: bool = False, scale_score: bool = True):
+    def forward(self, img, img_ds, scale_score: bool = True):
         f, _ = self.encoder(img)
         f_ds, _ = self.encoder(img_ds)
         f_combined = torch.hstack((f, f_ds))
         score = self.regressor(f_combined)
         if scale_score:
             score = self._scale_score(score)
-        if return_embedding:
-            return score, f_combined
-        else:
-            return score
+        return score
 
     def _scale_score(self, score: float, new_range: Tuple[float, float] = (0., 1.)) -> float:
         """

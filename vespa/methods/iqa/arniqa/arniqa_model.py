@@ -1,6 +1,5 @@
 import os
 import pickle
-
 import numpy as np
 import random
 import torch
@@ -15,6 +14,7 @@ from sklearn.linear_model import Ridge
 from einops import rearrange
 from scipy import stats
 
+from vespa.datasets.iqa_datasets.base_iqa_dataset import BaseIQADataset
 from vespa.methods.iqa.arniqa.model.resnet import ResNet
 from vespa.methods.iqa.arniqa.model.simclr import SimCLR
 from vespa.methods.iqa.arniqa.model.arniqa_predictor import ARNIQAPredictor
@@ -22,12 +22,8 @@ from vespa.methods.iqa.iqa_model import IQABaseModel
 from vespa.datasets.iqa_datasets import (LIVEDataset, CSIQDataset, TID2013Dataset, KADID10KDataset, FLIVEDataset,
                                          SPAQDataset, Koniq10kDataset, KADIS700Dataset)
 
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-
 SEED = 27
-DATA_BASE_PATH = Path(r'\\192.168.155.240\Robotica\dataset_iqa')
+DATA_BASE_PATH = Path(r'datasets_base_path')
 NUM_SPLITS = 10
 ALPHA = 0.1
 VAL_DATASETS = ['live']
@@ -106,10 +102,10 @@ class ARNIQAModel(IQABaseModel):
 
         with torch.no_grad(), torch.amp.autocast("cuda"):
             self.arniqa_predictor.eval()
-            score = self.arniqa_predictor(img, img_ds, return_embedding=False, scale_score=True)
+            score = self.arniqa_predictor(img, img_ds)
         return score.item()
 
-    def train(self, batch_size, epochs):
+    def train(self, batch_size: int, epochs: int):
         start_epoch = 0
         max_epochs = epochs
         best_srocc = 0
@@ -117,7 +113,6 @@ class ARNIQAModel(IQABaseModel):
         last_plcc = 0
         last_model_filename = ""
         best_model_filename = ""
-
 
         self._load_kadis700()
 
@@ -137,13 +132,6 @@ class ARNIQAModel(IQABaseModel):
                 inputs_B_orig = batch["img_B_orig"].to(device=self.device, non_blocking=True)
                 inputs_B_ds = batch["img_B_ds"].to(device=self.device, non_blocking=True)
                 inputs_B = torch.cat((inputs_B_orig, inputs_B_ds), dim=0)
-                img_A_name = batch["img_A_name"]
-                img_B_name = batch["img_B_name"]
-
-                distortion_functions = np.array(batch["distortion_functions"]).T  # Handle PyTorch's indexing of lists
-                distortion_functions = [list(filter(None,el)) for el in distortion_functions]  # Remove padding
-                distortion_values = torch.stack(batch["distortion_values"]).T  # Handle PyTorch's indexing of lists
-                distortion_values = [el[el != torch.inf] for el in distortion_values]  # Remove padding
 
                 # Zero the parameter gradients
                 self.optimizer.zero_grad()
@@ -289,33 +277,32 @@ class ARNIQAModel(IQABaseModel):
                     grid_search: bool,
                     crop_size: int,
                     batch_size: int,
-                    num_workers: int,
-                    eval_type: str = "scratch") -> Tuple[dict, dict, dict, dict, dict]:
+                    num_workers: int) -> Tuple[dict, dict, dict, dict, dict]:
         """
-            Get the results for the given model and datasets. Depending on the phase parameter, can be used both for validation
-            and test. If phase == 'test' and grid_search == True, performs a grid search over the validation splits to find the best
-            alpha value for the regression for each dataset. The results related to synthetic datasets contain also the results
-            for each distortion type.
+        Get the results for the given model and datasets. Depending on the phase parameter, can be used both for
+        validation and test. If phase == 'test' and grid_search == True, performs a grid search over the validation
+        splits to find the best alpha value for the regression for each dataset. The results related to synthetic
+        datasets contain also the results for each distortion type.
 
-            Args:
-                data_base_path (pathlib.Path): base path of the datasets
-                datasets (list): list of datasets
-                num_splits (int): number of splits
-                phase (str): phase of the datasets. Must be in ['val', 'test']
-                alpha (float): alpha value to use for regression. During test, if None, performs a grid search
-                grid_search (bool): whether to perform a grid search over the validation splits to find the best alpha value for the regression
-                crop_size (int): crop size
-                batch_size (int): batch size
-                num_workers (int): number of workers for the dataloaders
-                eval_type (str): Whether to test a model trained from scratch or the one pretrained by the authors of the ARNIQA paper.
+        Args:
+            data_base_path (pathlib.Path): base path of the datasets
+            datasets (list): list of datasets
+            num_splits (int): number of splits
+            phase (str): phase of the datasets. Must be in ['val', 'test']
+            alpha (float): alpha value to use for regression. During test, if None, performs a grid search
+            grid_search (bool): whether to perform a grid search over the validation splits to find the best alpha
+            value for the regression
+            crop_size (int): crop size
+            batch_size (int): batch size
+            num_workers (int): number of workers for the dataloaders
 
-            Returns:
-                srocc_all (dict): dictionary containing the SROCC results
-                plcc_all (dict): dictionary containing the PLCC results
-                regressors (dict): dictionary containing the regressors
-                alphas (dict): dictionary containing the alpha values used for the regression
-                best_worst_results_all (dict): dictionary containing the best and worst results
-            """
+        Returns:
+            srocc_all (dict): dictionary containing the SROCC results
+            plcc_all (dict): dictionary containing the PLCC results
+            regressors (dict): dictionary containing the regressors
+            alphas (dict): dictionary containing the alpha values used for the regression
+            best_worst_results_all (dict): dictionary containing the best and worst results
+        """
         srocc_all = {}
         plcc_all = {}
         regressors = {}
@@ -374,7 +361,7 @@ class ARNIQAModel(IQABaseModel):
         return srocc_all, plcc_all, regressors, alphas, best_worst_results_all
 
     def compute_metrics(self,
-                        dataset: Dataset,
+                        dataset: BaseIQADataset,
                         num_splits: int,
                         phase: str,
                         alpha: float,

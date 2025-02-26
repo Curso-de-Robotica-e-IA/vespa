@@ -18,6 +18,7 @@ numpy = "1.26.4"
 ruff = "^0.9.0"
 pytest = "^8.3.4"
 taskipy = "^1.14.1"
+kornia = "^0.8.0"
 
 # Torch 2.2.2 with CUDA 12.1 or higher
 torch = [

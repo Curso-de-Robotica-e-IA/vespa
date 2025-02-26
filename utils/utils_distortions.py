@@ -6,30 +6,12 @@ from torch.nn import functional as F
 import scipy
 
 
-def sign(x:float) -> int:
-    """
-    Returns the sign of a number.
-
-    This function determines the sign of the input number `x`. It returns:
-    - `1` if the number is positive,
-    - `-1` if the number is zero or negative.
-
-    Args:
-        x (float): The input number whose sign is to be determined.
-
-    Returns:
-        int: `1` if `x` is positive, `-1` otherwise.
-    """
-    return 1 if x > 0 else -1
-
-
-def mapmm(x: torch.Tensor) -> torch.Tensor:
+def normalize(x: torch.Tensor) -> torch.Tensor:
     """
     Normalizes a PyTorch tensor to the range [0, 1].
 
-    This function scales the input tensor `x` so that its minimum value becomes 0
-    and its maximum value becomes 1. If the tensor has a constant value
-    (min == max), it is returned unchanged to avoid division by zero.
+    This function scales the input tensor `x` so that its minimum value becomes 0 and its maximum value becomes 1. If
+    the tensor has a constant value (min == max), it is returned unchanged to avoid division by zero.
 
     Args:
         x (torch.Tensor): The input tensor to be normalized.
@@ -37,148 +19,175 @@ def mapmm(x: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor: The normalized tensor, with values in the range [0, 1].
     """
-    minx = torch.min(x)
-    maxx = torch.max(x)
-    if minx < maxx:
-        x = (x - minx) / (maxx - minx)
-    return x
+    minx = x.amin()
+    maxx = x.amax()
+    diff = maxx - minx
+    return (x - minx) / diff.clamp_min(1e-10)
 
 
-def fspecial(filter_type: str, p2: Union[int, Tuple[int, int]], p3: Union[int, float] = None) -> np.ndarray:
+def generate_gaussian_kernel(size: Tuple[int, int], sigma: Union[int, float]) -> torch.Tensor:
     """
-    Generates 2D filter kernels for image processing, including Gaussian, disk, and motion filters.
+    Generates a normalized 2D Gaussian kernel.
 
     Args:
-        filter_type (str): The type of filter to create. Supported values:
-            - 'gaussian': Creates a Gaussian filter kernel.
-            - 'disk': Creates a circular (disk-shaped) filter kernel.
-            - 'motion': Creates a motion blur filter kernel.
-        p2 (Union[int, Tuple[int, int]]): Parameter for filter size or radius:
-            - For 'gaussian': Tuple `(height, width)` specifying the filter size.
-            - For 'disk': Integer specifying the radius of the disk.
-            - For 'motion': Integer specifying the length of the motion blur.
-        p3 (Union[int, float], optional): Additional parameter:
-            - For 'gaussian': Float specifying the standard deviation (sigma).
-            - For 'motion': Float specifying the angle of motion blur in degrees.
-            - Not used for 'disk'.
+        size (Tuple[int, int]): Kernel size (height, width).
+        sigma (float): Standard deviation of the Gaussian function.
 
     Returns:
-        np.ndarray: A 2D array representing the filter kernel.
-
-    Raises:
-        NotImplementedError: If the specified `filter_type` is not implemented.
+        torch.Tensor: Normalized 2D Gaussian kernel.
     """
+    height, width = size
+    center_y, center_x = (height -1) /2., (width -1) /2.
+    y, x = np.ogrid[-center_y:center_y + 1, -center_x:center_x + 1]
+    kernel = np.exp(-(x ** 2 + y ** 2) / (2. * sigma ** 2))
+    kernel[kernel < np.finfo(kernel.dtype).eps * kernel.max()] = 0  # Remove too small values to avoid numerical erros
+    sumh = kernel.sum()
+    if sumh != 0:
+        kernel /= sumh
 
-    if filter_type == 'gaussian':
-        m, n = [(ss - 1.) / 2. for ss in p2]
-        y, x =np.ogrid[-m:m+1, -n:n +1]
-        h = np.exp(-(x * x + y * y) / (2. * p3 * p3))
-        h[h < np.finfo(h.dtype).eps * h.max()] = 0
-        sumh = h.sum()
-        if sumh != 0:
-            h /= sumh
+    return torch.from_numpy(kernel).float()
 
-        return h
 
-    elif filter_type == 'disk':
-        rad = p2
-        crad = math.ceil(rad - 0.5)
+def generate_disk_kernel(radius: int) -> torch.Tensor:
+    """
+    Generates a disk-shaped kernel for image filtering.
 
-        x, y = np.ogrid[-rad: rad + 1, -rad: rad + 1]
-        y = np.tile(y.transpose(), y.shape[1])
-        x = np.tile(x, x.shape[0]).transpose()
+    Args:
+        radius int: Radius of the disk.
 
-        y = np.abs(y)
-        x = np.abs(x)
+    Returns:
+        torch.Tensor: a 2D disk kernel normalized so that sum of all elements is 1.
+    """
+    # Compute the rounded radius value
+    rounded_radius = math.ceil(radius - 0.5)
 
-        maxxy = np.maximum(x, y)
-        minxy = np.minimum(x, y)
+    # Create a grid of x and y coordinates centered at zero
+    x, y = np.ogrid[-radius: radius + 1, -radius: radius + 1]
 
-        r1 = (rad ** 2 - (maxxy + 0.5) ** 2)
-        r2 = (rad ** 2 - (minxy - 0.5) ** 2)
+    # Repeat arrays to form a full coordinate grid
+    y = np.tile(y.T, y.shape[1])
+    x = np.tile(x, x.shape[0]).T
 
-        if (r1 > 0).all():
-            warn_m1 = r1 ** 0.5
-        else:
-            warn_m1 = 0
-        if (r2 > 0).all():
-            warn_m2 = r2 ** 0.5
-        else:
-            warn_m2 = 0
+    # Compute absolute values of coordinates
+    y, x = np.abs(y), np.abs(x)
 
-        m1 = (rad ** 2 < (maxxy + 0.5) ** 2 + (minxy - 0.5) ** 2) * (minxy - 0.5) + (
-                rad ** 2 >= (maxxy + 0.5) ** 2 + (minxy - 0.5) ** 2) * warn_m1
-        m2 = (rad ** 2 > (maxxy - 0.5) ** 2 + (minxy + 0.5) ** 2) * (minxy + 0.5) + (
-                rad ** 2 <= (maxxy - 0.5) ** 2 + (minxy + 0.5) ** 2) * warn_m2
+    # Compute max and min between x and y
+    max_xy = np.maximum(x, y)
+    min_xy = np.minimum(x, y)
 
-        sgrid = (rad ** 2 * (0.5 * (np.arcsin(m2 / rad) - np.arcsin(m1 / rad)) +
-                             0.25 * (np.sin(2 * np.arcsin(m2 / rad)) - np.sin(2 * np.arcsin(m1 / rad)))) - (
-                         maxxy - 0.5) * (m2 - m1) + (m1 - minxy + 0.5)) * np.logical_or(
-            np.logical_and((rad ** 2 < (maxxy + 0.5) ** 2 + (minxy + 0.5) ** 2),
-                           (rad ** 2 > (maxxy - 0.5) ** 2 + (minxy - 0.5) ** 2)),
-            np.logical_and(np.logical_and(minxy == 0, maxxy - 0.5 < rad), maxxy + 0.5 >= rad))
+    # Compute radial distances
+    r1 = (radius ** 2 - (max_xy + 0.5) ** 2)
+    r2 = (radius ** 2 - (min_xy - 0.5) ** 2)
 
-        sgrid = sgrid + ((maxxy + 0.5) ** 2 + (minxy + 0.5) ** 2 < rad ** 2)
-        sgrid[crad, crad] = np.minimum(math.pi * rad ** 2, math.pi / 2)
-        if (crad > 0) and (rad > crad - 0.5) and (rad ** 2 < (crad - 0.5) ** 2 + 0.25):
-            m1 = np.sqrt(rad ** 2 - (crad - 0.5) ** 2)
-            m1n = m1 / rad
-            sg0 = 2 * (rad ** 2 * (0.5 * np.arcsin(m1n) + 0.25 * np.sin(2 * np.arcsin(m1n))) - m1 * (crad - 0.5))
-            sgrid[2 * crad, crad] = sg0
-            sgrid[crad, 2 * crad] = sg0
-            sgrid[crad, 0] = sg0
-            sgrid[0, crad] = sg0
-            sgrid[2 * crad, crad] = sgrid[2 * crad, crad] - sg0
-            sgrid[crad, 2 * crad] = sgrid[crad, 2 * crad] - sg0
-            sgrid[crad, 2] = sgrid[crad, 2] - sg0
-            sgrid[2, crad] = sgrid[2, crad + 1] - sg0
-
-        sgrid[crad, crad] = np.minimum(sgrid[crad, crad], 1)
-        h = sgrid / np.sum(sgrid)
-        return h
-    elif filter_type == 'motion':
-
-        eps = 2.2204e-16
-        length = max(1, p2)
-        half_len = (length - 1) / 2.
-        phi = (p3 % 180) / 180 * math.pi
-
-        cosphi = math.cos(phi)
-        sinphi = math.sin(phi)
-        xsign = sign(cosphi)
-        linewdt = 1
-
-        sx = int(half_len * cosphi + linewdt * xsign - length * eps)
-        sy = int(half_len * sinphi + linewdt - length * eps)
-        x, y = np.mgrid[0:sx + (1 * xsign):xsign, 0:sy + 1]
-        x = x.transpose()
-        y = y.transpose()
-
-        dist2line = (y * cosphi - x * sinphi)
-        rad = (x ** 2 + y ** 2) ** 0.5
-
-        lastpix = np.where(np.logical_and((rad >= half_len), (abs(dist2line) <= linewdt)))
-        x2lastpix = half_len - np.abs((x[lastpix] + dist2line[lastpix] * sinphi) / cosphi);
-
-        dist2line[lastpix] = np.sqrt(dist2line[lastpix] ** 2 + x2lastpix ** 2)
-        dist2line = linewdt + eps - np.abs(dist2line)
-        dist2line[dist2line < 0] = 0
-
-        h = np.rot90(dist2line, 2)
-        tmp_h = np.zeros((h.shape[0] * 2 - 1, h.shape[1] * 2 - 1))
-        tmp_h[0:h.shape[0], 0:h.shape[1]] = h
-        tmp_h[(h.shape[0]) - 1:, h.shape[1] - 1:] = dist2line
-        h = tmp_h
-
-        h /= np.sum(h) + eps * length * length
-
-        if cosphi > 0:
-            h = np.flipud(h)
-
-        return h
-
+    # Compute square root values, ensuring non-negative results
+    if (r1 > 0).all():
+        warn_m1 = r1 ** 0.5
     else:
-        raise NotImplementedError(f"Filter type {filter_type} not implemented")
+        warn_m1 = 0
+
+    if (r2 > 0).all():
+        warn_m2 = r2 ** 0.5
+    else:
+        warn_m2 = 0
+
+    # Compute inner and outer boundaries for the disk shape
+    m1 = ((radius ** 2 < (max_xy + 0.5) ** 2 + (min_xy - 0.5) ** 2) * (min_xy - 0.5) +
+          (radius ** 2 >= (max_xy + 0.5) ** 2 + (min_xy - 0.5) ** 2) * warn_m1)
+    m2 = ((radius ** 2 > (max_xy - 0.5) ** 2 + (min_xy + 0.5) ** 2) * (min_xy + 0.5) +
+          (radius ** 2 <= (max_xy - 0.5) ** 2 + (min_xy + 0.5) ** 2) * warn_m2)
+
+    # Compute the area of the disk inside each grid cell and apply conditions to refine each grid cell
+    disk_area = (radius ** 2 * (0.5 * (np.arcsin(m2 / radius) - np.arcsin(m1 / radius)) +
+                                0.25 * (np.sin(2 * np.arcsin(m2 / radius)) - np.sin(2 * np.arcsin(m1 / radius)))) - (
+                     max_xy - 0.5) * (m2 - m1) + (m1 - min_xy + 0.5)) * np.logical_or(
+        np.logical_and((radius ** 2 < (max_xy + 0.5) ** 2 + (min_xy + 0.5) ** 2),
+                       (radius ** 2 > (max_xy - 0.5) ** 2 + (min_xy - 0.5) ** 2)),
+        np.logical_and(np.logical_and(min_xy == 0, max_xy - 0.5 < radius), max_xy + 0.5 >= radius))
+
+    disk_area = disk_area + ((max_xy + 0.5) ** 2 + (min_xy + 0.5) ** 2 < radius ** 2)
+    disk_area[rounded_radius, rounded_radius] = np.minimum(math.pi * radius ** 2, math.pi / 2)
+
+    # Adjust edge cases when the radius is close to the rounded boundary
+    if (rounded_radius > 0) and (radius > rounded_radius - 0.5) and (radius ** 2 < (rounded_radius - 0.5) ** 2 + 0.25):
+        m1 = np.sqrt(radius ** 2 - (rounded_radius - 0.5) ** 2)
+        m1_normalized = m1 / radius
+
+        sg0 = 2 * (radius ** 2 * (0.5 * np.arcsin(m1_normalized) + 0.25 * np.sin(2 * np.arcsin(m1_normalized))) -
+                   m1 * (rounded_radius - 0.5))
+
+        # Apply adjustments to specific positions
+        disk_area[2 * rounded_radius, rounded_radius] = sg0
+        disk_area[rounded_radius, 2 * rounded_radius] = sg0
+        disk_area[rounded_radius, 0] = sg0
+        disk_area[0, rounded_radius] = sg0
+
+        disk_area[2 * rounded_radius, rounded_radius] = disk_area[2 * rounded_radius, rounded_radius] - sg0
+        disk_area[rounded_radius, 2 * rounded_radius] = disk_area[rounded_radius, 2 * rounded_radius] - sg0
+        disk_area[rounded_radius, 2] = disk_area[rounded_radius, 2] - sg0
+        disk_area[2, rounded_radius] = disk_area[2, rounded_radius + 1] - sg0
+
+    # Ensure the central pixel does not exceed a value of 1
+    disk_area[rounded_radius, rounded_radius] = np.minimum(disk_area[rounded_radius, rounded_radius], 1)
+
+    # Normalize the kernel so that the sum of all values equals 1
+    disk_kernel = disk_area / np.sum(disk_area)
+
+    return torch.from_numpy(disk_kernel).float()
+
+
+def generate_motion_kernel(length: int, angle: int) -> torch.Tensor:
+    """
+    Generates a motion blur kernel.
+
+    Args:
+        length (int): the length of the motion blur.
+        angle (int): the angle of motion blur in degrees.
+    Returns:
+        torch.Tensor: a motion blur kernel as a tensor.
+    """
+    eps = 2.2204e-16
+    length = max(1, length)
+    half_len = (length - 1) / 2.
+    phi = (angle % 180) / 180 * math.pi
+
+    cos_phi, sin_phi = math.cos(phi), math.sin(phi)
+    x_sign = np.sign(cos_phi)
+    line_width = 1
+
+    # Determine grid dimensions
+    grid_x = int(half_len * cos_phi + line_width * x_sign - length * eps)
+    grid_y = int(half_len * sin_phi + line_width - length * eps)
+
+    # Create coordinate mesh grid
+    x, y = np.mgrid[0:grid_x + (1 * x_sign):x_sign, 0:grid_y + 1]
+    x, y = x.T, y.T
+
+    # Compute distance of each point from the motion line
+    dist_to_line = y * cos_phi - x * sin_phi
+    radius = (x ** 2 + y ** 2) ** 0.5
+
+    # Find pixels representing the motion boundary
+    last_pixels = np.where(np.logical_and((radius >= half_len), (abs(dist_to_line) <= line_width)))
+    x_shift_last_pixels = half_len - np.abs((x[last_pixels] + dist_to_line[last_pixels] * sin_phi) / cos_phi)
+
+    # Adjust distance values
+    dist_to_line[last_pixels] = np.sqrt(dist_to_line[last_pixels] ** 2 + x_shift_last_pixels ** 2)
+    dist_to_line = line_width + eps - np.abs(dist_to_line)
+    dist_to_line[dist_to_line < 0] = 0
+
+    # Create motion blur kernel and mirror it for symmetry
+    motion_kernel = np.rot90(dist_to_line, 2)
+    temp_kernel = np.zeros((motion_kernel.shape[0] * 2 - 1, motion_kernel.shape[1] * 2 - 1))
+    temp_kernel[0:motion_kernel.shape[0], 0:motion_kernel.shape[1]] = motion_kernel
+    temp_kernel[(motion_kernel.shape[0]) - 1:, motion_kernel.shape[1] - 1:] = dist_to_line
+    motion_kernel = temp_kernel
+
+    motion_kernel /= np.sum(motion_kernel) + eps * length * length
+
+    if cos_phi > 0:
+        motion_kernel = np.flipud(motion_kernel)
+
+    return torch.from_numpy(motion_kernel).float()
 
 
 def filter2D(img: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
@@ -210,7 +219,7 @@ def filter2D(img: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
         return F.conv2d(img, kernel, groups=b * c).view(b, c, h, w)
 
 
-def curves(xx: torch.Tensor, coef: float) -> torch.Tensor:
+def curves(xx: torch.Tensor, coef: float | list) -> torch.Tensor:
     """
     Applies a non-linear transformation to a tensor using cubic spline interpolation.
 
@@ -252,7 +261,7 @@ def curves(xx: torch.Tensor, coef: float) -> torch.Tensor:
     return yy
 
 
-def spline(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def spline(x: np.ndarray, y: np.ndarray) -> tuple:
     """
        Computes the coefficients for a cubic spline interpolation based on the input points.
 
