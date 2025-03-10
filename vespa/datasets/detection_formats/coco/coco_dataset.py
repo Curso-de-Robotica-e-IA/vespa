@@ -9,7 +9,9 @@ from vespa.datasets.utils import pascal_voc_to_yolo
 
 
 class COCODataset(BaseDataset):
-    def __init__(self, root_dir, txt_file, transforms=None, model_name: str = None):
+    def __init__(
+        self, root_dir, txt_file, transforms=None, model_name: str = None
+    ):
         """
         Inicializa o dataset COCO.
 
@@ -69,14 +71,14 @@ class COCODataset(BaseDataset):
             'labels': torch.tensor(labels, dtype=torch.int64),
         }
 
-        if self.model == "retinanet":
+        if self.model == 'retinanet':
             return target
-        elif self.model == "rcnn":
+        elif self.model == 'rcnn':
             return target
-        elif self.model == "yolo":
+        elif self.model == 'yolo':
             return pascal_voc_to_yolo(idx, img, boxes, labels)
         else:
-            raise ValueError(f"Unsupported model type: {self.model}")
+            raise ValueError(f'Unsupported model type: {self.model}')
 
         return img, target
 

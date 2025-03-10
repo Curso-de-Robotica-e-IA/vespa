@@ -5,7 +5,7 @@ from albumentations import Compose
 from tqdm import tqdm
 
 from vespa.datasets.base_dataset import BaseDataset
-from vespa.datasets.utils import yolo_to_retinanet, yolo_to_rcnn
+from vespa.datasets.utils import yolo_to_rcnn, yolo_to_retinanet
 
 
 class YOLODataset(BaseDataset):
@@ -136,7 +136,7 @@ class YOLODataset(BaseDataset):
         elif self.model == 'yolo':
             return image, boxes, labels
         else:
-            raise ValueError(f"Unsupported model type: {self.model}")
+            raise ValueError(f'Unsupported model type: {self.model}')
 
     def __len__(self):
         """
