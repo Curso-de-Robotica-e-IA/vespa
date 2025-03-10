@@ -24,11 +24,11 @@ class RCNN(BaseModel):
         super().__init__(*args, **kwargs)
 
         # Define os pesos corretamente
-        if num_classes != 91:
+        if num_classes != 91:  # noqa
             weights = None
 
         # Verifica se há pesos para o backbone nos argumentos
-        weights_backbone = kwargs.get("weights_backbone", None)
+        weights_backbone = kwargs.get('weights_backbone', None)
 
         self.name = 'rcnn'
 
@@ -189,8 +189,8 @@ class RCNN(BaseModel):
         all_labels = []
 
         for images, targets in test_loader:
-            images = [img.to(device) for img in images]
-            outputs = self.model(images)
+            imgs = [img.to(device) for img in images]
+            outputs = self.model(imgs)
 
             for output, target in zip(outputs, targets):
                 preds = output['labels'].cpu().numpy()

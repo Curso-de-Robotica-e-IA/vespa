@@ -5,7 +5,7 @@ import cv2
 import torch
 
 from vespa.datasets.base_dataset import BaseDataset
-from vespa.datasets.utils import pascal_voc_to_yolo
+from vespa.datasets.utils import coco_to_yolo
 
 
 class PascalVOCDataset(BaseDataset):
@@ -112,7 +112,7 @@ class PascalVOCDataset(BaseDataset):
         elif self.model == 'rcnn':
             return target
         elif self.model == 'yolo':
-            return pascal_voc_to_yolo(idx, img, boxes, labels)
+            return coco_to_yolo(idx, img, boxes, labels)
         else:
             raise ValueError(f'Unsupported model type: {self.model}')
 

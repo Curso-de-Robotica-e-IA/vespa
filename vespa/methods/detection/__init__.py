@@ -100,6 +100,7 @@ from vespa.datasets.detection_formats.yolo.yolo_transforms import (
     get_yolo_train_transforms,
 )
 
+from .rcnn.model import RCNN
 from .retinanet.model import RetinaNet
 
 
@@ -234,6 +235,8 @@ def train_model(
 
     if model_name == 'retinanet':
         model = RetinaNet(num_classes=num_classes)
+    elif model_name == 'rcnn':
+        model = RCNN(num_classes=num_classes)
     else:
         raise ValueError('Unsupported model name.')
 

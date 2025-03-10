@@ -1,7 +1,7 @@
 from vespa.methods import detection
 
 
-class VespaAIModelManager:
+class Vespa:
     def __init__(self):
         self._task = None
         self._model = None

@@ -40,6 +40,7 @@ def yolo_dataset_test_retina(root_path_dataset_yolo_format):
         model_name='retinanet',
     )
 
+
 @pytest.fixture
 def yolo_dataset_train_rcnn(root_path_dataset_yolo_format):
     """
@@ -52,6 +53,7 @@ def yolo_dataset_train_rcnn(root_path_dataset_yolo_format):
         transforms=get_yolo_train_transforms(),
         model_name='rcnn',
     )
+
 
 @pytest.fixture
 def yolo_dataset_test_rcnn(root_path_dataset_yolo_format):

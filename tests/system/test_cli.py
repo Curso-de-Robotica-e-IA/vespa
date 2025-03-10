@@ -117,7 +117,7 @@ def test_missing_train_params_stdout():
     )
 
 
-@pytest.mark.parametrize('model_name', ['retinanet'])
+@pytest.mark.parametrize('model_name', ['rcnn', 'retinanet'])
 def test_train_model_exit_code(model_name):
     """
     Test if the `train` command exits successfully
@@ -145,7 +145,7 @@ def test_train_model_exit_code(model_name):
     )  # noqa
 
 
-@pytest.mark.parametrize('model_name', ['retinanet'])
+@pytest.mark.parametrize('model_name', ['rcnn', 'retinanet'])
 def test_train_model_output(model_name):
     """
     Test if `train` prints a confirmation message when training starts.
@@ -172,7 +172,7 @@ def test_train_model_output(model_name):
     )  # noqa
 
 
-@pytest.mark.parametrize('model_name', ['retinanet'])
+@pytest.mark.parametrize('model_name', ['rcnn', 'retinanet'])
 def test_predict_exit_code(model_name):
     """
     Test if `predict` exits successfully with valid parameters.
@@ -197,7 +197,7 @@ def test_predict_exit_code(model_name):
     )  # noqa
 
 
-@pytest.mark.parametrize('model_name', ['retinanet'])
+@pytest.mark.parametrize('model_name', ['rcnn', 'retinanet'])
 def test_predict_output(model_name):
     """
     Test if `predict` produces the expected output format.

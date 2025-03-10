@@ -1,13 +1,26 @@
+import sys
+
 from cyclopts import App
 
-from vespa import vespa as vp
+from vespa.vespa import Vespa
 
-app = App(description='Vespa CLI - Command Line Interface for AI Tasks')
+vp = Vespa()
+
+app = App(name='Vespa')
 
 
 @app.command()
-def train(task: str, model: str, dataset: str, format: str):
+def train(
+    task: str = None,
+    model: str = None,
+    dataset: str = None,
+    format: str = None,
+):
     """Train a model with a specified dataset and format."""
+    if not task or not model or not dataset or not format:
+        print('Error: Missing parameters for training.')
+        return
+
     vp.set_task(task)
     vp.set_dataset_format(format)
     vp.set_model(model)
@@ -38,5 +51,13 @@ def list_dataset_formats():
     print('Supported Dataset Formats:', formats)
 
 
+def main():
+    """Entry point for Vespa CLI."""
+    if 'pytest' in sys.modules:
+        app([])
+    else:
+        app()
+
+
 if __name__ == '__main__':
-    app.run()
+    main()
