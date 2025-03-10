@@ -5,7 +5,7 @@ from albumentations import Compose
 from tqdm import tqdm
 
 from vespa.datasets.base_dataset import BaseDataset
-from vespa.datasets.utils import yolo_to_retinanet
+from vespa.datasets.utils import yolo_to_rcnn, yolo_to_retinanet
 
 
 class YOLODataset(BaseDataset):
@@ -131,6 +131,8 @@ class YOLODataset(BaseDataset):
 
         if self.model == 'retinanet':
             return yolo_to_retinanet(idx, image, boxes, labels)
+        elif self.model == 'rcnn':
+            return yolo_to_rcnn(idx, image, boxes, labels)
 
         raise ValueError(f'Invalid model type: {self.model}')
 
