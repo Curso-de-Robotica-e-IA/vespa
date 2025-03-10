@@ -37,13 +37,13 @@ torchvision = [
     { url = "https://download.pytorch.org/whl/cu121/torchvision-0.17.2%2Bcu121-cp312-cp312-linux_x86_64.whl", platform = "linux" },
 ]
 cyclopts = "^3.9.0"
-
-[tool.poetry.scripts]
-vespa = "vespa.cli.cli:main"
-mkdocs = "^1.6.1"
+mkdocs = "1.6.1"
 mkdocs-material = "^9.6.4"
 pymdown-extensions = "^10.14.3"
 mkdocstrings = "^0.28.0"
+
+[tool.poetry.scripts]
+vespa = "vespa.cli.cli:main"
 
 [tool.ruff]
 line-length = 79
