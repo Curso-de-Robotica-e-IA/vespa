@@ -2,9 +2,8 @@ import sys
 
 from cyclopts import App
 
-from vespa.vespa import Vespa
+from vespa import vespa as vp
 
-vp = Vespa()
 
 app = App(name='Vespa')
 

@@ -1,57 +1,55 @@
 from vespa.methods import detection
 
+_task = None
+_model = None
+_dataset_format = None
 
-class Vespa:
-    def __init__(self):
-        self._task = None
-        self._model = None
-        self._dataset_format = None
+def set_task(task_type: str):
+    global _task
+    if not task_type == 'detection':
+        raise ValueError("Invalid task type. Choose from 'detection'.")
+    _task = task_type
 
-    def set_task(self, task_type: str):
-        if not task_type == 'detection':
-            raise ValueError("Invalid task type. Choose from 'detection'.")
-        self._task = task_type
+def set_dataset_format(dataset_format: str):
+    global _dataset_format
+    if dataset_format not in {'yolo', 'coco', 'pascal_voc'}:
+        raise ValueError('Invalid dataset format.')
+    _dataset_format = dataset_format
 
-    def set_dataset_format(self, dataset_format: str):
-        if dataset_format not in {'yolo', 'coco', 'pascal_voc'}:
-            raise ValueError('Invalid dataset format.')
-        self._dataset_format = dataset_format
+def set_model(model_name: str):
+    global _model
+    _model = model_name
 
-    def set_model(self, model_name: str):
-        self._model = model_name
+def train(dataset_path: str):
+    if _task == 'detection':
+        return detection.train_model(
+            _model,
+            dataset_path,
+            _dataset_format,
+            txt_file='train.txt',
+        )
+    else:
+        raise ValueError('No task type set. Use set_task().')
 
-    def train(self, dataset_path: str):
-        if self._task == 'detection':
-            return detection.train_model(
-                self._model,
-                dataset_path,
-                self._dataset_format,
-                txt_file='train.txt',
-            )
-        else:
-            raise ValueError('No task type set. Use set_task().')
+def validate(dataset_path: str):
+    if _task == 'detection':
+        return detection.validate_model(
+            _model,
+            dataset_path,
+            _dataset_format,
+            txt_file='val.txt',
+        )
+    else:
+        raise ValueError('No task type set. Use set_task().')
 
-    def validate(self, dataset_path: str):
-        if self._task == 'detection':
-            return detection.validate_model(
-                self._model,
-                dataset_path,
-                self._dataset_format,
-                txt_file='val.txt',
-            )
-        else:
-            raise ValueError('No task type set. Use set_task().')
+def predict(image_path: str):
+    if _task == 'detection':
+        return detection.run_inference(_model, image_path)
+    else:
+        raise ValueError('No task type set. Use set_task().')
 
-    def predict(self, image_path: str):
-        if self._task == 'detection':
-            return detection.run_inference(self._model, image_path)
-        else:
-            raise ValueError('No task type set. Use set_task().')
+def list_models():
+    return {'detection': detection.available_models()}
 
-    @staticmethod
-    def list_models():
-        return {'detection': detection.available_models()}
-
-    @staticmethod
-    def list_dataset_formats():
-        return ['yolo', 'coco', 'pascal_voc']
+def list_dataset_formats():
+    return ['yolo', 'coco', 'pascal_voc']

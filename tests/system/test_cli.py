@@ -129,7 +129,7 @@ def test_train_model_exit_code(model_name):
     Fails if:
     - The command exits with a non-zero code.
     """
-    _, _, exit_code = run_cli_command([
+    _, stderr, exit_code = run_cli_command([
         'train',
         '--task',
         'detection',
@@ -141,7 +141,7 @@ def test_train_model_exit_code(model_name):
         './assets/datasets/detection/yolo',
     ])
     assert exit_code == 0, (
-        f'Expected exit code 0 for model {model_name}, but got {exit_code}'
+        f'Expected exit code 0 for model {model_name}, but got {exit_code}, {stderr}'
     )  # noqa
 
 
@@ -156,7 +156,7 @@ def test_train_model_output(model_name):
     Fails if:
     - The output does not contain 'Training Result:'.
     """
-    stdout, _, _ = run_cli_command([
+    stdout, stderr, _ = run_cli_command([
         'train',
         '--task',
         'detection',
@@ -168,7 +168,7 @@ def test_train_model_output(model_name):
         './assets/datasets/detection/yolo',
     ])
     assert 'Training Result:' in stdout, (
-        f"Expected 'Training Result:' in stdout, but got: {stdout}"
+        f"Expected 'Training Result:' in stdout, but got: {stdout}, {stderr}"
     )  # noqa
 
 
@@ -183,7 +183,7 @@ def test_predict_exit_code(model_name):
     Fails if:
     - The command exits with a non-zero code.
     """
-    _, _, exit_code = run_cli_command([
+    _, stderr, exit_code = run_cli_command([
         'predict',
         '--task',
         'detection',
@@ -193,7 +193,7 @@ def test_predict_exit_code(model_name):
         'assets/datasets/detection/yolo/test/images/image_0.jpg',
     ])
     assert exit_code == 0, (
-        f'Expected exit code 0 for model {model_name}, but got {exit_code}'
+        f'Expected exit code 0 for model {model_name}, but got {exit_code}, {stderr}'
     )  # noqa
 
 
@@ -208,7 +208,7 @@ def test_predict_output(model_name):
     Fails if:
     - The output does not contain 'Prediction Output:'.
     """
-    stdout, _, _ = run_cli_command([
+    stdout, stderr, _ = run_cli_command([
         'predict',
         '--task',
         'detection',
@@ -218,5 +218,5 @@ def test_predict_output(model_name):
         'assets/datasets/detection/yolo/test/images/image_0.jpg',
     ])
     assert 'Prediction Output:' in stdout, (
-        f"Expected 'Prediction Output:' in stdout, but got: {stdout}"
+        f"Expected 'Prediction Output:' in stdout, but got: {stdout}, {stderr}"
     )  # noqa
