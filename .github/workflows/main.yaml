@@ -45,11 +45,11 @@ jobs:
 
         # 9️⃣ Format code
       - name: Run Black Formatter (Check Mode)
-        run: poetry run black --check .
+        run: poetry run task format
 
         # 1️⃣0️⃣ Lint code
       - name: Run Ruff Linter
-        run: poetry run ruff check .
+        run: poetry run task lint
 
         # 1️⃣1️⃣ Run Tests
       - name: Run Tests with pytest
