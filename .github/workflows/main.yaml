@@ -53,4 +53,4 @@ jobs:
 
         # 1️⃣1️⃣ Run Tests
       - name: Run Tests with pytest
-        run: poetry run pytest --cov=vespa --cov-report=xml
+        run: poetry run task test
