@@ -70,7 +70,7 @@ def test_yolo_dataset_test_boxes(yolo_dataset_test_retina):
     print(f"Boxes encontrados: {target['boxes']}")
 
     # Se houver pelo menos uma imagem com bounding boxes, o teste passa
-    assert any(len(t['boxes']) > 0 for _, t in dataset), "Nenhuma bounding box encontrada no dataset!"
+    assert any(len(t['boxes']) > 0 for _, t in dataset), "Nenhuma bounding box encontrada no dataset!" # noqa
 
 
 
