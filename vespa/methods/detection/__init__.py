@@ -264,6 +264,8 @@ def validate_model(
     )
     if model_name == 'retinanet':
         model = RetinaNet()
+    elif model_name == 'rcnn':
+        model = RCNN()
     else:
         raise ValueError('Unsupported model name.')
     return model.valid(val_dataset, batch_size=4, device='cuda')
@@ -302,6 +304,8 @@ def run_inference(model_name: str, image_path: str):
     # Load the correct model
     if model_name == 'retinanet':
         model = RetinaNet()
+    elif model_name == 'rcnn':
+        model = RCNN()
     else:
         raise ValueError('Unsupported model name.')
 
