@@ -129,7 +129,7 @@ def test_train_model_exit_code(model_name):
     Fails if:
     - The command exits with a non-zero code.
     """
-    _, stderr, exit_code = run_cli_command([
+    _, _, exit_code = run_cli_command([
         'train',
         '--task',
         'detection',
@@ -156,7 +156,7 @@ def test_train_model_output(model_name):
     Fails if:
     - The output does not contain 'Training Result:'.
     """
-    stdout, stderr, _ = run_cli_command([
+    stdout, _, _ = run_cli_command([
         'train',
         '--task',
         'detection',
@@ -183,7 +183,7 @@ def test_predict_exit_code(model_name):
     Fails if:
     - The command exits with a non-zero code.
     """
-    _, stderr, exit_code = run_cli_command([
+    _, _, exit_code = run_cli_command([
         'predict',
         '--task',
         'detection',
@@ -208,7 +208,7 @@ def test_predict_output(model_name):
     Fails if:
     - The output does not contain 'Prediction Output:'.
     """
-    stdout, stderr, _ = run_cli_command([
+    stdout, _, _ = run_cli_command([
         'predict',
         '--task',
         'detection',
