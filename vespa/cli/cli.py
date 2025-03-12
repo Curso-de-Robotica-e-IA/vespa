@@ -23,8 +23,8 @@ def train(
     vp.set_task(task)
     vp.set_dataset_format(format)
     vp.set_model(model)
-    result = vp.train(dataset)
-    print('Training Result:', result)
+    vp.train(dataset)
+    print('Training Result: Success')
 
 
 @app.command()

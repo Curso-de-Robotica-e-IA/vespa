@@ -100,8 +100,6 @@ def test_model_sketch_labels(rcnn_sketch_fixture, tensor_image_fixture):
 def test_model_boxes_random_noise(rcnn_pretrained_fixture):
     """Testa o modelo com uma imagem de ruído
     aleatório e verifica se retorna detecções."""
-    """Testa o modelo com uma imagem de ruído
-    aleatório e verifica se retorna detecções."""
     rcnn_pretrained_fixture.eval()
 
     input_tensor = torch.rand((3, 32, 32))
@@ -115,8 +113,6 @@ def test_model_boxes_random_noise(rcnn_pretrained_fixture):
 def test_model_labels_random_noise(rcnn_pretrained_fixture):
     """Testa o modelo com uma imagem de ruído
     aleatório e verifica se retorna detecções."""
-    """Testa o modelo com uma imagem de ruído
-    aleatório e verifica se retorna detecções."""
     rcnn_pretrained_fixture.eval()
 
     input_tensor = torch.rand((3, 32, 32))
@@ -128,8 +124,6 @@ def test_model_labels_random_noise(rcnn_pretrained_fixture):
 
 
 def test_model_trainable(rcnn_pretrained_fixture):
-    """Verifica se o modelo pode ser treinado
-    sem erro em um batch pequeno."""
     """Verifica se o modelo pode ser
     treinado sem erro em um batch pequeno."""
     rcnn_pretrained_fixture.train()
