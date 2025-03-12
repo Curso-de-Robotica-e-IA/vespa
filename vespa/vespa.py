@@ -5,19 +5,19 @@ _model = None
 _dataset_format = None
 
 def set_task(task_type: str):
-    global _task
+    global _task # noqa
     if not task_type == 'detection':
         raise ValueError("Invalid task type. Choose from 'detection'.")
     _task = task_type
 
 def set_dataset_format(dataset_format: str):
-    global _dataset_format
+    global _dataset_format # noqa
     if dataset_format not in {'yolo', 'coco', 'pascal_voc'}:
         raise ValueError('Invalid dataset format.')
     _dataset_format = dataset_format
 
 def set_model(model_name: str):
-    global _model
+    global _model # noqa
     _model = model_name
 
 def train(dataset_path: str):

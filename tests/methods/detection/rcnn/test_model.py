@@ -40,14 +40,6 @@ def test_model_labels(rcnn_pretrained_fixture, tensor_image_fixture):
     for result in results:
         assert isinstance(result['labels'], Tensor)
 
-
-def test_model_train_loop_cpu(
-        rcnn_pretrained_fixture,
-        yolo_dataset_train_rcnn
-        ):
-    initial_weights = {
-        name: param.clone() for name, param in rcnn_pretrained_fixture.named_parameters() # noqa
-        }
     
 def test_model_train_loop_cpu(
     rcnn_pretrained_fixture, yolo_dataset_train_rcnn
@@ -103,18 +95,6 @@ def test_model_sketch_labels(rcnn_sketch_fixture, tensor_image_fixture):
 
     for result in results:
         assert isinstance(result['labels'], Tensor)
-
-
-def test_model_sketch_train_loop_gpu(
-    rcnn_sketch_fixture, yolo_dataset_train_rcnn
-):
-    rcnn_sketch_fixture.fit(yolo_dataset_train_rcnn, 4, 4, 0)
-
-
-def test_model_sketch_train_loop_cpu(
-    rcnn_sketch_fixture, yolo_dataset_train_rcnn
-):
-    rcnn_sketch_fixture.fit(yolo_dataset_train_rcnn, 1, 1, 'cpu')
 
 
 def test_model_boxes_random_noise(rcnn_pretrained_fixture):

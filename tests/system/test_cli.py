@@ -141,7 +141,7 @@ def test_train_model_exit_code(model_name):
         './assets/datasets/detection/yolo',
     ])
     assert exit_code == 0, (
-        f'Expected exit code 0 for model {model_name}, but got {exit_code}, {stderr}'
+        f'Expected exit code 0 for model {model_name}, but got {exit_code}'
     )  # noqa
 
 
@@ -168,7 +168,7 @@ def test_train_model_output(model_name):
         './assets/datasets/detection/yolo',
     ])
     assert 'Training Result:' in stdout, (
-        f"Expected 'Training Result:' in stdout, but got: {stdout}, {stderr}"
+        f"Expected 'Training Result:' in stdout, but got: {stdout}"
     )  # noqa
 
 
@@ -193,7 +193,7 @@ def test_predict_exit_code(model_name):
         'assets/datasets/detection/yolo/test/images/image_0.jpg',
     ])
     assert exit_code == 0, (
-        f'Expected exit code 0 for model {model_name}, but got {exit_code}, {stderr}'
+        f'Expected exit code 0 for model {model_name}, but got {exit_code}'
     )  # noqa
 
 
@@ -218,5 +218,5 @@ def test_predict_output(model_name):
         'assets/datasets/detection/yolo/test/images/image_0.jpg',
     ])
     assert 'Prediction Output:' in stdout, (
-        f"Expected 'Prediction Output:' in stdout, but got: {stdout}, {stderr}"
+        f"Expected 'Prediction Output:' in stdout, but got: {stdout}"
     )  # noqa
