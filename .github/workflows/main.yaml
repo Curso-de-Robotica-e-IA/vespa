@@ -1,0 +1,56 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  test:
+    name: Run Tests & Format Code
+    runs-on: windows-latest
+
+    steps:
+        # 1️⃣ Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+        # 2️⃣ Configura Python e Poetry
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+
+        # 5️⃣ Install Poetry
+      - name: Install Python Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.8.4
+
+        # 6️⃣ Configure Poetry
+      - name: Configure poetry
+        shell: bash
+        run: python -m poetry config virtualenvs.in-project true
+
+        # 8️⃣ Install dependencies
+      - name: Set Python for Poetry
+        run: |
+          python -m poetry install
+
+        # 9️⃣ Format code
+      - name: Run Black Formatter (Check Mode)
+        run: poetry run task format
+
+        # 1️⃣0️⃣ Lint code
+      - name: Run Ruff Linter
+        run: poetry run task lint
+
+        # 1️⃣1️⃣ Run Tests
+      - name: Run Tests with pytest
+        run: poetry run task test

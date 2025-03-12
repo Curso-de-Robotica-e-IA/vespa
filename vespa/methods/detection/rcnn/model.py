@@ -9,6 +9,7 @@ from vespa.datasets.base_dataset import BaseDataset
 from vespa.methods.base_model import BaseModel
 from vespa.methods.utils import configure_optimizer, custom_collate_fn
 
+NUM_CLASSES_COCO = 91
 
 class RCNN(BaseModel):
     def __init__(
@@ -24,7 +25,7 @@ class RCNN(BaseModel):
         super().__init__(*args, **kwargs)
 
         # Define os pesos corretamente
-        if num_classes != 91:  # noqa
+        if num_classes != NUM_CLASSES_COCO:
             weights = None
 
         # Verifica se há pesos para o backbone nos argumentos
@@ -189,8 +190,8 @@ class RCNN(BaseModel):
         all_labels = []
 
         for images, targets in test_loader:
-            imgs = [img.to(device) for img in images]
-            outputs = self.model(imgs)
+            image_list = [img.to(device) for img in images]
+            outputs = self.model(image_list)
 
             for output, target in zip(outputs, targets):
                 preds = output['labels'].cpu().numpy()

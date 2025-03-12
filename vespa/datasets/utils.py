@@ -46,7 +46,9 @@ def yolo_to_retinanet(
     """
     Converts YOLO format bounding boxes to RetinaNet format.
     """
-    converted_boxes, labels, area = yolo_preprocess(image, boxes, labels)
+    converted_boxes, labels, area = yolo_preprocess(
+        image, boxes, labels
+    )
     target = {
         'boxes': converted_boxes,
         'labels': labels,
