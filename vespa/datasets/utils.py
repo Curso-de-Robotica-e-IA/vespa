@@ -3,7 +3,8 @@ from torch import tensor, empty, zeros, int64, float32
 
 def yolo_preprocess(image: torch.Tensor, boxes: list, labels: list):
     """
-    Preprocess YOLO format bounding boxes into a format suitable for conversion.
+    Preprocess YOLO format bounding boxes
+    into a format suitable for conversion.
     """
     converted_boxes = []
     img_h, img_w = image.shape[1], image.shape[2]  # Altura e largura
@@ -17,7 +18,9 @@ def yolo_preprocess(image: torch.Tensor, boxes: list, labels: list):
         ymax = int((y_center + height / 2) * img_h)
 
         if xmin >= xmax or ymin >= ymax:
-            print(f'⚠️ Bounding box inválida removida: {[xmin, ymin, xmax, ymax]}')
+            print(
+                f'⚠️ Bounding box inválida removida: {[xmin, ymin, xmax, ymax]}' # noqa
+            )
             continue
 
         converted_boxes.append([xmin, ymin, xmax, ymax])
@@ -25,7 +28,9 @@ def yolo_preprocess(image: torch.Tensor, boxes: list, labels: list):
     if len(converted_boxes) > 0:
         converted_boxes = tensor(converted_boxes, dtype=float32)
         labels = tensor(labels, dtype=int64)
-        area = (converted_boxes[:, 2] - converted_boxes[:, 0]) * (converted_boxes[:, 3] - converted_boxes[:, 1])
+        area = (
+            converted_boxes[:, 2] - converted_boxes[:, 0]) * (
+                converted_boxes[:, 3] - converted_boxes[:, 1])
     else:
         converted_boxes = empty((0, 4), dtype=float32)
         labels = empty((0,), dtype=int64)
@@ -33,11 +38,15 @@ def yolo_preprocess(image: torch.Tensor, boxes: list, labels: list):
     
     return converted_boxes, labels, area
 
-def yolo_to_retinanet(idx: int, image: torch.Tensor, boxes: list, labels: list):
+def yolo_to_retinanet(
+        idx: int, image: torch.Tensor, boxes: list, labels: list
+):
     """
     Converts YOLO format bounding boxes to RetinaNet format.
     """
-    converted_boxes, labels, area = yolo_preprocess(image, boxes, labels)
+    converted_boxes, labels, area = yolo_preprocess(
+        image, boxes, labels
+    )
     target = {
         'boxes': converted_boxes,
         'labels': labels,
@@ -46,7 +55,9 @@ def yolo_to_retinanet(idx: int, image: torch.Tensor, boxes: list, labels: list):
     }
     return image, target
 
-def yolo_to_rcnn(idx: int, image: torch.Tensor, boxes: list, labels: list):
+def yolo_to_rcnn(
+        idx: int, image: torch.Tensor, boxes: list, labels: list
+):
     """
     Converts YOLO format bounding boxes to RCNN format.
     """
