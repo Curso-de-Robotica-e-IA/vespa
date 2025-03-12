@@ -166,23 +166,16 @@ def test_model_trainable(rcnn_pretrained_fixture):
     loss = sum(loss for loss in loss_dict.values())
 
     assert loss.item() > 0, "A loss deve ser maior que 0 durante o treinamento" # noqa
-    assert loss.item() > 0, 'A loss deve ser maior que 0 durante o treinamento'  # noqa
 
 
 def test_model_freeze_layers(rcnn_pretrained_fixture):
     """Verifica se o congelamento das
     camadas do backbone funciona corretamente."""
     for param in rcnn_pretrained_fixture.model.backbone.parameters():
-    """Verifica se o congelamento
-    das camadas do backbone funciona corretamente."""
-    for param in rcnn_pretrained_fixture.model.backbone.parameters():  # noqa
         param.requires_grad = False
 
     frozen_params = [
-        p.requires_grad
-        for p in rcnn_pretrained_fixture.model.backbone.parameters()
-    ]  # noqa
-
-    assert not any(frozen_params), (
-        'Todas as camadas do backbone deveriam estar congeladas'
-    )  # noqa
+        p.requires_grad for p in rcnn_pretrained_fixture.model.backbone.parameters() # noqa
+    ]
+    
+    assert not any(frozen_params), "Todas as camadas do backbone deveriam estar congeladas" # noqa
