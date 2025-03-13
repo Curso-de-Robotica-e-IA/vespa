@@ -5,6 +5,7 @@ import cv2
 import torch
 
 from vespa.datasets.base_dataset import BaseDataset
+from vespa.datasets.utils import coco_to_yolo
 
 
 class PascalVOCDataset(BaseDataset):
@@ -21,7 +22,7 @@ class PascalVOCDataset(BaseDataset):
         self.image_paths = []
         self.annotation_paths = []
         self.class_to_idx = {}
-        self.model_name = model_name
+        self.model = model_name
 
         for file in os.listdir(os.path.join(root_dir, 'Annotations')):
             if file.endswith('.xml'):
@@ -101,11 +102,19 @@ class PascalVOCDataset(BaseDataset):
                 img = augmented['image']
 
         target = {
+            'image': img,
             'boxes': torch.tensor(boxes, dtype=torch.float32),
             'labels': torch.tensor(labels, dtype=torch.int64),
         }
 
-        return img, target
+        if self.model == 'retinanet':
+            return target
+        elif self.model == 'rcnn':
+            return target
+        elif self.model == 'yolo':
+            return coco_to_yolo(idx, img, boxes, labels)
+        else:
+            raise ValueError(f'Unsupported model type: {self.model}')
 
     def __len__(self):
         """

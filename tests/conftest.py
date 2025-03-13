@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from vespa.datasets.detection.yolo.yolo_dataset import YOLODataset
-from vespa.datasets.detection.yolo.yolo_transforms import (
+from vespa.datasets.detection_formats.yolo.yolo_dataset import YOLODataset
+from vespa.datasets.detection_formats.yolo.yolo_transforms import (
     get_yolo_test_transforms,
     get_yolo_train_transforms,
 )
@@ -40,6 +40,7 @@ def yolo_dataset_test_retina(root_path_dataset_yolo_format):
         model_name='retinanet',
     )
 
+
 @pytest.fixture
 def yolo_dataset_train_rcnn(root_path_dataset_yolo_format):
     """
@@ -52,6 +53,7 @@ def yolo_dataset_train_rcnn(root_path_dataset_yolo_format):
         transforms=get_yolo_train_transforms(),
         model_name='rcnn',
     )
+
 
 @pytest.fixture
 def yolo_dataset_test_rcnn(root_path_dataset_yolo_format):

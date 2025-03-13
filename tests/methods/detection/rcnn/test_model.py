@@ -1,6 +1,5 @@
 import torch
 from torch import Tensor
-import torch.nn.functional as F
 
 
 def test_model_list(rcnn_pretrained_fixture, tensor_image_fixture):
@@ -41,19 +40,22 @@ def test_model_labels(rcnn_pretrained_fixture, tensor_image_fixture):
     for result in results:
         assert isinstance(result['labels'], Tensor)
 
-
-def test_model_train_loop_cpu(
-        rcnn_pretrained_fixture,
-        yolo_dataset_train_rcnn
-        ):
-    initial_weights = {
-        name: param.clone() for name, param in rcnn_pretrained_fixture.named_parameters() # noqa
-        }
     
+def test_model_train_loop_cpu(
+    rcnn_pretrained_fixture, yolo_dataset_train_rcnn
+):
+    initial_weights = {
+        name: param.clone()
+        for name, param in rcnn_pretrained_fixture.named_parameters()
+    }  # noqa
+
     rcnn_pretrained_fixture.fit(yolo_dataset_train_rcnn, 1, 1, 'cpu')
 
     for name, param in rcnn_pretrained_fixture.named_parameters():
         assert not torch.equal(initial_weights[name], param), f"Peso {name} não mudou após o treino!" # noqa
+        assert not torch.equal(initial_weights[name], param), (
+            f'Peso {name} não mudou após o treino!'
+        )  # noqa
 
 
 def test_model_sketch_list(rcnn_sketch_fixture, tensor_image_fixture):
@@ -122,15 +124,17 @@ def test_model_labels_random_noise(rcnn_pretrained_fixture):
 
 
 def test_model_trainable(rcnn_pretrained_fixture):
-    """Verifica se o modelo pode ser treinado
-    sem erro em um batch pequeno."""
+    """Verifica se o modelo pode ser
+    treinado sem erro em um batch pequeno."""
     rcnn_pretrained_fixture.train()
 
     input_tensor = torch.rand((3, 32, 32))
-    target = [{
-        "boxes": torch.tensor([[5, 5, 15, 15]], dtype=torch.float32),
-        "labels": torch.tensor([1], dtype=torch.int64)
-    }]
+    target = [
+        {
+            'boxes': torch.tensor([[5, 5, 15, 15]], dtype=torch.float32),
+            'labels': torch.tensor([1], dtype=torch.int64),
+        }
+    ]
 
     loss_dict = rcnn_pretrained_fixture([input_tensor], target)
     loss = sum(loss for loss in loss_dict.values())

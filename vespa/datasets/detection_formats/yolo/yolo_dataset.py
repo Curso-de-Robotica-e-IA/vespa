@@ -13,9 +13,9 @@ class YOLODataset(BaseDataset):
         self,
         root_dir: str,
         txt_file: str,
-        image_size: int,
-        transforms: Compose,
-        model_name: str,
+        image_size: int = 416,
+        transforms: Compose = None,
+        model_name: str = None,
     ):
         """
         Initializes the YOLO dataset.
@@ -133,8 +133,12 @@ class YOLODataset(BaseDataset):
             return yolo_to_retinanet(idx, image, boxes, labels)
         elif self.model == 'rcnn':
             return yolo_to_rcnn(idx, image, boxes, labels)
-
-        raise ValueError(f'Invalid model type: {self.model}')
+        elif self.model == 'rcnn':
+            return yolo_to_rcnn(idx, image, boxes, labels)
+        elif self.model == 'yolo':
+            return image, boxes, labels
+        else:
+            raise ValueError(f'Unsupported model type: {self.model}')
 
     def __len__(self):
         """

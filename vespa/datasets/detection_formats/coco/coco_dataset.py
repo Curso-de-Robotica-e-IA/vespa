@@ -5,10 +5,13 @@ import torch
 from pycocotools.coco import COCO
 
 from vespa.datasets.base_dataset import BaseDataset
+from vespa.datasets.utils import coco_to_yolo
 
 
 class COCODataset(BaseDataset):
-    def __init__(self, root_dir, txt_file, transforms=None):
+    def __init__(
+        self, root_dir, txt_file, transforms=None, model_name: str = None
+    ):
         """
         Inicializa o dataset COCO.
 
@@ -21,6 +24,7 @@ class COCODataset(BaseDataset):
         super().__init__(root_dir, transforms)
         self.coco = COCO(txt_file)
         self.image_ids = list(self.coco.imgs.keys())
+        self.model = model_name
 
     def __getitem__(self, idx):
         """
@@ -62,9 +66,19 @@ class COCODataset(BaseDataset):
                 img = augmented['image']
 
         target = {
+            'image': img,
             'boxes': torch.tensor(boxes, dtype=torch.float32),
             'labels': torch.tensor(labels, dtype=torch.int64),
         }
+
+        if self.model == 'retinanet':
+            return target
+        elif self.model == 'rcnn':
+            return target
+        elif self.model == 'yolo':
+            return coco_to_yolo(idx, img, boxes, labels)
+        else:
+            raise ValueError(f'Unsupported model type: {self.model}')
 
         return img, target
 

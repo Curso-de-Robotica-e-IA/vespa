@@ -29,7 +29,7 @@ class RCNN(BaseModel):
             weights = None
 
         # Verifica se há pesos para o backbone nos argumentos
-        weights_backbone = kwargs.get("weights_backbone", None)
+        weights_backbone = kwargs.get('weights_backbone', None)
 
         self.name = 'rcnn'
 
